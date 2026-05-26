@@ -168,15 +168,15 @@
 
 ### 2.5 Implementaciones de casos de uso
 
-- 2.5.1 `ClienteService : IClienteService`
+- [x] 2.5.1 `ClienteService : IClienteService`
   - Usa `IUnitOfWork` y `MapsterMapper.IMapper` (o `.Adapt<T>()`)
   - En `RegistrarClienteConVehiculoAsync`: crear `Persona`, `Cliente`, `DocumentoPersona`, `CorreoPersona`, `TelefonoPersona` y llamar `CommitAsync()` en una sola transacción
   - En `EliminarAsync`: verificar que no haya `OrdenesServicio` con estado activo; lanzar excepción de negocio si existen
-- 2.5.2 `VehiculoService : IVehiculoService`
+- [x] 2.5.2 `VehiculoService : IVehiculoService`
   - Valida unicidad de VIN antes de crear
   - Asigna propietario en `HistorialPropietariosVehiculo` con `FechaInicio = hoy`
   - En `EliminarAsync`: verifica que no haya órdenes activas
-- 2.5.3 `OrdenServicioService : IOrdenServicioService`
+- [x] 2.5.3 `OrdenServicioService : IOrdenServicioService`
   - En `CrearOrdenAsync`:
     - Verificar que el vehículo no tenga otra orden activa (estado ≠ Completada/Cancelada)
     - Calcular `FechaEstimadaEntrega` según regla: Mantenimiento +1 día, Reparación +3 días, Diagnóstico +1 día
@@ -186,32 +186,32 @@
     - Actualizar `TrabajoRealizado` y `IdEstadoOrden`
     - Para cada repuesto en `DetallesOrden`: decrementar `Stock` en `Repuestos`
     - Registrar auditoría
-- 2.5.4 `RepuestoService : IRepuestoService`
+- [x] 2.5.4 `RepuestoService : IRepuestoService`
   - En `CrearAsync`: validar que `Codigo` sea único
   - En `AjustarStockAsync`: no permitir stock negativo; lanzar excepción de negocio
-- 2.5.5 `FacturaService : IFacturaService`
+- [x] 2.5.5 `FacturaService : IFacturaService`
   - En `GenerarFacturaAsync`:
     - Verificar que la orden esté en estado "Completada"
     - Obtener todos los `DetalleOrdenRepuesto` de la orden
     - Calcular `Total = manoObra + SUM(cantidad * precioUnitarioAplicado)`
     - Crear `Factura` y sus `DetalleFactura` (un registro por repuesto + uno por mano de obra)
     - Llamar `CommitAsync()`
-- 2.5.6 `UsuarioService : IUsuarioService`
+- [x] 2.5.6 `UsuarioService : IUsuarioService`
   - En `CrearAsync`: hashear contraseña con BCrypt (`BCrypt.Net-Next`)
   - En `LoginAsync`:
     - Buscar usuario por correo (join `Persona → CorreoPersona → DominioCorreo`)
     - Verificar hash con BCrypt
     - Generar token JWT con claims: `sub` (IdUsuario), `email`, `role`
     - Retornar `TokenResponseDto`
-- 2.5.7 `AuditoriaService : IAuditoriaService`
+- [x] 2.5.7 `AuditoriaService : IAuditoriaService`
   - Buscar `TipoAccionAuditoria` por nombre; crear si no existe
   - Persistir `Auditoria` con `CommitAsync()`
 
 ### 2.6 Excepciones personalizadas de aplicación
 
-- 2.6.1 `NotFoundException` — se lanza cuando una entidad no existe
-- 2.6.2 `BusinessRuleException` — se lanza cuando se viola una regla de negocio
-- 2.6.3 `ConflictException` — se lanza por duplicados (VIN, Código repuesto, etc.)
+- [x] 2.6.1 `NotFoundException` — se lanza cuando una entidad no existe
+- [x] 2.6.2 `BusinessRuleException` — se lanza cuando se viola una regla de negocio
+- [x] 2.6.3 `ConflictException` — se lanza por duplicados (VIN, Código repuesto, etc.)
 
 ---
 
