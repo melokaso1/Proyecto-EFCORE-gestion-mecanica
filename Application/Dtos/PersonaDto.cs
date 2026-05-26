@@ -1,10 +1,8 @@
-namespace Domain.Entities;
+namespace Application.Dtos;
 
-public class Persona
+public class PersonaDto
 {
-    public int IdPersona { get; set; }
     public string Nombres { get; set; } = string.Empty;
     public string Apellidos { get; set; } = string.Empty;
     public DateTime FechaRegistro { get; set; }
-    public ICollection<CorreoPersona> CorreosPersona { get; set; } = [];
 }

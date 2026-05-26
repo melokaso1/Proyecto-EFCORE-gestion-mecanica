@@ -76,9 +76,9 @@
 
 ### 1.4 Reglas de negocio (métodos de dominio)
 
-- 1.4.1 En `OrdenServicio`: método `EstaActiva()` → retorna true si estado no es "Completada" ni "Cancelada"
-- 1.4.2 En `Repuesto`: método `TieneStock(int cantidad)` → retorna true si `Stock >= cantidad`
-- 1.4.3 En `Vehiculo`: no puede tener dos órdenes simultáneas en estado activo (validar en caso de uso)
+- [x] 1.4.1 En `OrdenServicio`: método `EstaActiva()` → retorna true si estado no es "Completada" ni "Cancelada"
+- [x] 1.4.2 En `Repuesto`: método `TieneStock(int cantidad)` → retorna true si `Stock >= cantidad`
+- [x] 1.4.3 En `Vehiculo`: no puede tener dos órdenes simultáneas en estado activo (validar en caso de uso → `OrdenServicioService.CrearOrdenAsync`)
 
 ---
 
@@ -86,27 +86,27 @@
 
 ### 2.1 DTOs
 
-- 2.1.1 `PersonaDto` — `Nombres`, `Apellidos`, `FechaRegistro`
-- 2.1.2 `ClienteDto` — `IdCliente`, `Persona` (PersonaDto), `Estado`
-- 2.1.3 `CreateClienteDto` — `Nombres`, `Apellidos`, `Correo`, `Telefono`, `NumeroDocumento`, `IdTipoDocumento`
-- 2.1.4 `VehiculoDto` — `IdVehiculo`, `Marca`, `Modelo`, `VIN`, `Anio`, `Kilometraje`
-- 2.1.5 `CreateVehiculoDto` — `IdModelo`, `VIN`, `Anio`, `Kilometraje`, `IdCliente`
-- 2.1.6 `OrdenServicioDto` — `IdOrdenServicio`, `VIN`, `TipoServicio`, `MecanicoNombre`, `Estado`, `FechaIngreso`, `FechaEstimadaEntrega`, `TrabajoRealizado`
-- 2.1.7 `CreateOrdenServicioDto` — `IdVehiculo`, `IdTipoServicio`, `IdMecanico`
-- 2.1.8 `UpdateOrdenServicioDto` — `IdEstadoOrden`, `TrabajoRealizado`, `FechaEstimadaEntrega`
-- 2.1.9 `RepuestoDto` — `IdRepuesto`, `Codigo`, `Descripcion`, `Stock`, `StockMinimo`, `PrecioUnitario`, `Categoria`, `Activo`
-- 2.1.10 `CreateRepuestoDto` — `IdCategoriaRepuesto`, `Codigo`, `Descripcion`, `Stock`, `StockMinimo`, `PrecioUnitario`
-- 2.1.11 `DetalleOrdenDto` — `IdRepuesto`, `Descripcion`, `Cantidad`, `PrecioUnitarioAplicado`, `Subtotal`
-- 2.1.12 `FacturaDto` — `IdFactura`, `IdOrdenServicio`, `FechaFactura`, `ManoObra`, `Detalles` (List), `Total`
-- 2.1.13 `UsuarioDto` — `IdUsuario`, `NombreCompleto`, `Correo`, `Roles`
-- 2.1.14 `CreateUsuarioDto` — `Nombres`, `Apellidos`, `Correo`, `Password`, `IdRol`
-- 2.1.15 `LoginDto` — `Correo`, `Password`
-- 2.1.16 `TokenResponseDto` — `Token`, `Expiracion`
-- 2.1.17 `PagedResultDto<T>` — `Items` (List), `TotalCount`, `PageNumber`, `PageSize`
+- [x] 2.1.1 `PersonaDto` — `Nombres`, `Apellidos`, `FechaRegistro`
+- [x] 2.1.2 `ClienteDto` — `IdCliente`, `Persona` (PersonaDto), `Estado`
+- [x] 2.1.3 `CreateClienteDto` — `Nombres`, `Apellidos`, `Correo`, `Telefono`, `NumeroDocumento`, `IdTipoDocumento`
+- [x] 2.1.4 `VehiculoDto` — `IdVehiculo`, `Marca`, `Modelo`, `VIN`, `Anio`, `Kilometraje`
+- [x] 2.1.5 `CreateVehiculoDto` — `IdModelo`, `VIN`, `Anio`, `Kilometraje`, `IdCliente`
+- [x] 2.1.6 `OrdenServicioDto` — `IdOrdenServicio`, `VIN`, `TipoServicio`, `MecanicoNombre`, `Estado`, `FechaIngreso`, `FechaEstimadaEntrega`, `TrabajoRealizado`
+- [x] 2.1.7 `CreateOrdenServicioDto` — `IdVehiculo`, `IdTipoServicio`, `IdMecanico`
+- [x] 2.1.8 `UpdateOrdenServicioDto` — `IdEstadoOrden`, `TrabajoRealizado`, `FechaEstimadaEntrega`
+- [x] 2.1.9 `RepuestoDto` — `IdRepuesto`, `Codigo`, `Descripcion`, `Stock`, `StockMinimo`, `PrecioUnitario`, `Categoria`, `Activo`
+- [x] 2.1.10 `CreateRepuestoDto` — `IdCategoriaRepuesto`, `Codigo`, `Descripcion`, `Stock`, `StockMinimo`, `PrecioUnitario`
+- [x] 2.1.11 `DetalleOrdenDto` — `IdRepuesto`, `Descripcion`, `Cantidad`, `PrecioUnitarioAplicado`, `Subtotal`
+- [x] 2.1.12 `FacturaDto` — `IdFactura`, `IdOrdenServicio`, `FechaFactura`, `ManoObra`, `Detalles` (List), `Total`
+- [x] 2.1.13 `UsuarioDto` — `IdUsuario`, `NombreCompleto`, `Correo`, `Roles`
+- [x] 2.1.14 `CreateUsuarioDto` — `Nombres`, `Apellidos`, `Correo`, `Password`, `IdRol`
+- [x] 2.1.15 `LoginDto` — `Correo`, `Password`
+- [x] 2.1.16 `TokenResponseDto` — `Token`, `Expiracion`
+- [x] 2.1.17 `PagedResultDto<T>` — `Items` (List), `TotalCount`, `PageNumber`, `PageSize`
 
 ### 2.2 Interfaz de Unit of Work
 
-- 2.2.1 `IUnitOfWork` con propiedades:
+- [x] 2.2.1 `IUnitOfWork` con propiedades:
   - `IClienteRepository Clientes`
   - `IVehiculoRepository Vehiculos`
   - `IOrdenServicioRepository OrdenesServicio`
@@ -119,50 +119,50 @@
 
 ### 2.3 Configuraciones de Mapster (`IRegister`)
 
-- 2.3.1 `ClienteMappingConfig : IRegister` — mapear `Cliente → ClienteDto`, `CreateClienteDto → Persona + Cliente`
-- 2.3.2 `VehiculoMappingConfig : IRegister` — mapear `Vehiculo → VehiculoDto`, `CreateVehiculoDto → Vehiculo`
-- 2.3.3 `OrdenServicioMappingConfig : IRegister` — mapear `OrdenServicio → OrdenServicioDto`
-- 2.3.4 `RepuestoMappingConfig : IRegister` — mapear `Repuesto → RepuestoDto`, `CreateRepuestoDto → Repuesto`
-- 2.3.5 `FacturaMappingConfig : IRegister` — mapear `Factura → FacturaDto`, incluir cálculo de `Total`
-- 2.3.6 `UsuarioMappingConfig : IRegister` — mapear `Usuario → UsuarioDto` (ignorar `PasswordHash`)
+- [x] 2.3.1 `ClienteMappingConfig : IRegister` — mapear `Cliente → ClienteDto`, `CreateClienteDto → Persona + Cliente`
+- [x] 2.3.2 `VehiculoMappingConfig : IRegister` — mapear `Vehiculo → VehiculoDto`, `CreateVehiculoDto → Vehiculo`
+- [x] 2.3.3 `OrdenServicioMappingConfig : IRegister` — mapear `OrdenServicio → OrdenServicioDto`
+- [x] 2.3.4 `RepuestoMappingConfig : IRegister` — mapear `Repuesto → RepuestoDto`, `CreateRepuestoDto → Repuesto`
+- [x] 2.3.5 `FacturaMappingConfig : IRegister` — mapear `Factura → FacturaDto`, incluir cálculo de `Total`
+- [x] 2.3.6 `UsuarioMappingConfig : IRegister` — mapear `Usuario → UsuarioDto` (ignorar `PasswordHash`)
 
 ### 2.4 Interfaces de servicios de aplicación (Puertos de entrada)
 
-- 2.4.1 `IClienteService` con métodos:
+- [x] 2.4.1 `IClienteService` con métodos:
   - `Task<ClienteDto> RegistrarClienteConVehiculoAsync(CreateClienteDto dto)`
   - `Task<PagedResultDto<ClienteDto>> ListarClientesAsync(int page, int size, string? filtro)`
   - `Task<ClienteDto?> ObtenerPorIdAsync(int id)`
   - `Task ActualizarAsync(int id, CreateClienteDto dto)`
   - `Task EliminarAsync(int id)` — valida que no tenga órdenes activas
-- 2.4.2 `IVehiculoService` con métodos:
+- [x] 2.4.2 `IVehiculoService` con métodos:
   - `Task<VehiculoDto> CrearAsync(CreateVehiculoDto dto)`
   - `Task<PagedResultDto<VehiculoDto>> ListarAsync(int page, int size, int? idCliente, string? vin)`
   - `Task<VehiculoDto?> ObtenerPorVinAsync(string vin)`
   - `Task ActualizarAsync(int id, CreateVehiculoDto dto)`
   - `Task EliminarAsync(int id)` — valida que no tenga órdenes activas
-- 2.4.3 `IOrdenServicioService` con métodos:
+- [x] 2.4.3 `IOrdenServicioService` con métodos:
   - `Task<OrdenServicioDto> CrearOrdenAsync(CreateOrdenServicioDto dto)`
   - `Task ActualizarConTrabajoRealizadoAsync(int id, UpdateOrdenServicioDto dto)`
   - `Task CancelarOrdenAsync(int id)`
   - `Task<PagedResultDto<OrdenServicioDto>> ListarAsync(int page, int size, string? estado, int? idCliente, int? idMecanico, DateTime? desde, DateTime? hasta)`
   - `Task<OrdenServicioDto?> ObtenerPorIdAsync(int id)`
-- 2.4.4 `IRepuestoService` con métodos:
+- [x] 2.4.4 `IRepuestoService` con métodos:
   - `Task<RepuestoDto> CrearAsync(CreateRepuestoDto dto)`
   - `Task ActualizarAsync(int id, CreateRepuestoDto dto)`
   - `Task DesactivarAsync(int id)`
   - `Task<PagedResultDto<RepuestoDto>> ListarAsync(int page, int size, string? descripcion, int? idCategoria, bool? soloConStockMinimo)`
   - `Task AjustarStockAsync(int id, int cantidad)` — suma o resta
-- 2.4.5 `IFacturaService` con métodos:
+- [x] 2.4.5 `IFacturaService` con métodos:
   - `Task<FacturaDto> GenerarFacturaAsync(int idOrdenServicio, decimal manoObra)`
   - `Task<FacturaDto?> ObtenerPorOrdenAsync(int idOrdenServicio)`
   - `Task<PagedResultDto<FacturaDto>> ListarAsync(int page, int size, int? idCliente, DateTime? desde, DateTime? hasta)`
-- 2.4.6 `IUsuarioService` con métodos:
+- [x] 2.4.6 `IUsuarioService` con métodos:
   - `Task<UsuarioDto> CrearAsync(CreateUsuarioDto dto)`
   - `Task<TokenResponseDto> LoginAsync(LoginDto dto)`
   - `Task<PagedResultDto<UsuarioDto>> ListarAsync(int page, int size)`
   - `Task AsignarRolAsync(int idUsuario, int idRol)`
   - `Task DesactivarAsync(int id)`
-- 2.4.7 `IAuditoriaService` con métodos:
+- [x] 2.4.7 `IAuditoriaService` con métodos:
   - `Task RegistrarAsync(int idUsuario, string tipoAccion, string entidad, int idRegistro, string? descripcion)`
   - `Task<PagedResultDto<AuditoriaDto>> ListarAsync(int page, int size, string? entidad, int? idUsuario)`
 

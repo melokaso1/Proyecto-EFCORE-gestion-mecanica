@@ -7,4 +7,5 @@ public class Vehiculo
     public string VIN { get; set; } = string.Empty;
     public int Anio { get; set; }
     public int Kilometraje { get; set; }
+    public ModeloVehiculo? Modelo { get; set; }
 }

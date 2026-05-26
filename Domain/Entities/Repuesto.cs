@@ -10,4 +10,7 @@ public class Repuesto
     public int StockMinimo { get; set; }
     public decimal PrecioUnitario { get; set; }
     public bool Activo { get; set; }
+    public CategoriaRepuesto? CategoriaRepuesto { get; set; }
+
+    public bool TieneStock(int cantidad) => Stock >= cantidad;
 }
