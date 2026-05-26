@@ -2,20 +2,20 @@
 
 ## FASE 0 — Configuración inicial del proyecto
 
-- 0.1 Crear solución con `dotnet new sln -n GestionMecanica`
-- 0.2 Crear proyectos de capas:
+- [x] 0.1 Crear solución con `dotnet new sln -n GestionMecanica`
+- [x] 0.2 Crear proyectos de capas:
   - `dotnet new classlib -n Domain`
   - `dotnet new classlib -n Application`
   - `dotnet new classlib -n Infrastructure`
   - `dotnet new webapi -n API --Use-Controllers`
-- 0.3 Agregar todos los proyectos a la solución (`dotnet sln add`)
-- 0.4 Referenciar capas en orden:
+- [x] 0.3 Agregar todos los proyectos a la solución (`dotnet sln add`)
+- [x] 0.4 Referenciar capas en orden:
   - API → Application → Domain
   - Infrastructure → Application
   - API → Infrastructure
-- 0.5 Instalar paquetes NuGet por proyecto:
-  - **Infrastructure**: `Pomelo.EntityFrameworkCore.MySql`, `Microsoft.EntityFrameworkCore.Design`
-  - **Application**: `mapster`, `Mapster.Extensions.Microsoft.DependencyInjection`
+- [x] 0.5 Instalar paquetes NuGet por proyecto:
+  - **Infrastructure**: `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.Design`
+  - **Application**: `Mapster`, `Mapster.DependencyInjection`
   - **API**: `Microsoft.AspNetCore.Authentication.JwtBearer`, `AspNetCoreRateLimit`, `Swashbuckle.AspNetCore`
 
 ---
@@ -24,39 +24,39 @@
 
 ### 1.1 Entidades base
 
-- [] 1.1.1 Crear clase abstracta `BaseEntity` con propiedad `Id` (int)
+- [x] 1.1.1 Crear clase abstracta `BaseEntity` con propiedad `Id` (int)
 
 ### 1.2 Entidades del negocio
 
-- [ ] 1.2.1 `TipoDocumento` — propiedades: `IdTipoDocumento`, `Codigo` (string, 10), `Nombre` (string, 80) — propiedades: `IdTipoDocumento`, `Codigo` (string, 10), `Nombre` (string, 80)
-- 1.2.2 `Persona` — propiedades: `IdPersona`, `Nombres` (100), `Apellidos` (100), `FechaRegistro` (DateTime)
-- 1.2.3 `DocumentoPersona` — FK: `IdPersona`, `IdTipoDocumento`; propiedades: `NumeroDocumento` (50), `EsPrincipal` (bool)
-- 1.2.4 `DominioCorreo` — propiedades: `IdDominioCorreo`, `Dominio` (100)
-- 1.2.5 `CorreoPersona` — FK: `IdPersona`, `IdDominioCorreo`; propiedades: `UsuarioCorreo` (100), `EsPrincipal`
-- 1.2.6 `CodigoTelefono` — propiedades: `IdCodigoTelefono`, `Codigo` (10), `Pais` (80)
-- 1.2.7 `TelefonoPersona` — FK: `IdPersona`, `IdCodigoTelefono`; propiedades: `NumeroTelefono` (30), `EsPrincipal`
-- 1.2.8 `Cliente` — FK: `IdPersona`; propiedades: `IdCliente`, `Estado` (bool)
-- 1.2.9 `Usuario` — FK: `IdPersona`; propiedades: `IdUsuario`, `PasswordHash` (255), `Estado` (bool)
-- 1.2.10 `Rol` — propiedades: `IdRol`, `NombreRol` (50)
-- 1.2.11 `UsuarioRol` — PK compuesta: (`IdUsuario`, `IdRol`)
-- 1.2.12 `MarcaVehiculo` — propiedades: `IdMarca`, `NombreMarca` (80)
-- 1.2.13 `ModeloVehiculo` — FK: `IdMarca`; propiedades: `IdModelo`, `NombreModelo` (80)
-- 1.2.14 `Vehiculo` — FK: `IdModelo`; propiedades: `IdVehiculo`, `VIN` (17, único), `Anio`, `Kilometraje`
-- 1.2.15 `HistorialPropietarioVehiculo` — FK: `IdVehiculo`, `IdCliente`; propiedades: `FechaInicio`, `FechaFin` (nullable)
-- 1.2.16 `TipoServicio` — propiedades: `IdTipoServicio`, `Nombre` (80)
-- 1.2.17 `EstadoOrden` — propiedades: `IdEstadoOrden`, `Nombre` (50)
-- 1.2.18 `OrdenServicio` — FK: `IdVehiculo`, `IdTipoServicio`, `IdMecanico` (Usuario), `IdEstadoOrden`; propiedades: `FechaIngreso`, `FechaEstimadaEntrega` (nullable), `TrabajoRealizado` (Text)
-- 1.2.19 `CategoriaRepuesto` — propiedades: `IdCategoriaRepuesto`, `Nombre` (80)
-- 1.2.20 `Repuesto` — FK: `IdCategoriaRepuesto`; propiedades: `Codigo` (50, único), `Descripcion` (255), `Stock`, `StockMinimo`, `PrecioUnitario` (decimal 10,2), `Activo`
-- 1.2.21 `DetalleOrdenRepuesto` — FK: `IdOrdenServicio`, `IdRepuesto`; propiedades: `Cantidad`, `PrecioUnitarioAplicado` (decimal 10,2); UNIQUE compuesto
-- 1.2.22 `Factura` — FK: `IdOrdenServicio` (único); propiedades: `FechaFactura`, `ManoObra` (decimal), `Total` (decimal)
-- 1.2.23 `DetalleFactura` — FK: `IdFactura`; propiedades: `Concepto` (150), `Cantidad`, `PrecioUnitario`
-- 1.2.24 `TipoAccionAuditoria` — propiedades: `IdTipoAccionAuditoria`, `Nombre` (50)
-- 1.2.25 `Auditoria` — FK: `IdUsuario`, `IdTipoAccionAuditoria`; propiedades: `EntidadAfectada` (100), `IdRegistroAfectado`, `FechaHora`, `Descripcion` (Text)
+- [x] 1.2.1 `TipoDocumento` — propiedades: `IdTipoDocumento`, `Codigo` (string, 10), `Nombre` (string, 80)
+- [x] 1.2.2 `Persona` — propiedades: `IdPersona`, `Nombres` (100), `Apellidos` (100), `FechaRegistro` (DateTime)
+- [x] 1.2.3 `DocumentoPersona` — FK: `IdPersona`, `IdTipoDocumento`; propiedades: `NumeroDocumento` (50), `EsPrincipal` (bool)
+- [x] 1.2.4 `DominioCorreo` — propiedades: `IdDominioCorreo`, `Dominio` (100)
+- [x] 1.2.5 `CorreoPersona` — FK: `IdPersona`, `IdDominioCorreo`; propiedades: `UsuarioCorreo` (100), `EsPrincipal`
+- [x] 1.2.6 `CodigoTelefono` — propiedades: `IdCodigoTelefono`, `Codigo` (10), `Pais` (80)
+- [x] 1.2.7 `TelefonoPersona` — FK: `IdPersona`, `IdCodigoTelefono`; propiedades: `NumeroTelefono` (30), `EsPrincipal`
+- [x] 1.2.8 `Cliente` — FK: `IdPersona`; propiedades: `IdCliente`, `Estado` (bool)
+- [x] 1.2.9 `Usuario` — FK: `IdPersona`; propiedades: `IdUsuario`, `PasswordHash` (255), `Estado` (bool)
+- [x] 1.2.10 `Rol` — propiedades: `IdRol`, `NombreRol` (50)
+- [x] 1.2.11 Relación N:N `Usuario` ↔ `Rol` — `ICollection<Rol>` en `Usuario` y `ICollection<Usuario>` en `Rol` (tabla intermedia `UsuarioRoles` sin entidad)
+- [x] 1.2.12 `MarcaVehiculo` — propiedades: `IdMarca`, `NombreMarca` (80)
+- [x] 1.2.13 `ModeloVehiculo` — FK: `IdMarca`; propiedades: `IdModelo`, `NombreModelo` (80)
+- [x] 1.2.14 `Vehiculo` — FK: `IdModelo`; propiedades: `IdVehiculo`, `VIN` (17, único), `Anio`, `Kilometraje`
+- [x] 1.2.15 `HistorialPropietarioVehiculo` — FK: `IdVehiculo`, `IdCliente`; propiedades: `FechaInicio`, `FechaFin` (nullable)
+- [x] 1.2.16 `TipoServicio` — propiedades: `IdTipoServicio`, `Nombre` (80)
+- [x] 1.2.17 `EstadoOrden` — propiedades: `IdEstadoOrden`, `Nombre` (50)
+- [x] 1.2.18 `OrdenServicio` — FK: `IdVehiculo`, `IdTipoServicio`, `IdMecanico` (Usuario), `IdEstadoOrden`; propiedades: `FechaIngreso`, `FechaEstimadaEntrega` (nullable), `TrabajoRealizado` (Text)
+- [x] 1.2.19 `CategoriaRepuesto` — propiedades: `IdCategoriaRepuesto`, `Nombre` (80)
+- [x] 1.2.20 `Repuesto` — FK: `IdCategoriaRepuesto`; propiedades: `Codigo` (50, único), `Descripcion` (255), `Stock`, `StockMinimo`, `PrecioUnitario` (decimal 10,2), `Activo`
+- [x] 1.2.21 `DetalleOrdenRepuesto` — FK: `IdOrdenServicio`, `IdRepuesto`; propiedades: `Cantidad`, `PrecioUnitarioAplicado` (decimal 10,2); UNIQUE compuesto
+- [x] 1.2.22 `Factura` — FK: `IdOrdenServicio` (único); propiedades: `FechaFactura`, `ManoObra` (decimal), `Total` (decimal)
+- [x] 1.2.23 `DetalleFactura` — FK: `IdFactura`; propiedades: `Concepto` (150), `Cantidad`, `PrecioUnitario`
+- [x] 1.2.24 `TipoAccionAuditoria` — propiedades: `IdTipoAccionAuditoria`, `Nombre` (50)
+- [x] 1.2.25 `Auditoria` — FK: `IdUsuario`, `IdTipoAccionAuditoria`; propiedades: `EntidadAfectada` (100), `IdRegistroAfectado`, `FechaHora`, `Descripcion` (Text)
 
 ### 1.3 Interfaces de repositorio (Puertos de salida)
 
-- 1.3.1 `IGenericRepository<T>` con métodos:
+- [x] 1.3.1 `IGenericRepository<T>` con métodos:
   - `Task<T?> GetByIdAsync(int id)`
   - `Task<IEnumerable<T>> GetAllAsync()`
   - `Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)`
@@ -64,7 +64,7 @@
   - `Task AddAsync(T entity)`
   - `void Update(T entity)`
   - `void Remove(T entity)`
-- 1.3.2 Interfaces específicas:
+- [x] 1.3.2 Interfaces específicas:
   - `IClienteRepository : IGenericRepository<Cliente>`
   - `IVehiculoRepository : IGenericRepository<Vehiculo>`
   - `IOrdenServicioRepository : IGenericRepository<OrdenServicio>`
@@ -117,14 +117,14 @@
   - `IAuditoriaRepository Auditorias`
   - `Task<int> CommitAsync()`
 
-### 2.3 Perfiles de AutoMapper
+### 2.3 Configuraciones de Mapster (`IRegister`)
 
-- 2.3.1 `ClienteProfile` — mapear `Cliente → ClienteDto`, `CreateClienteDto → Persona + Cliente`
-- 2.3.2 `VehiculoProfile` — mapear `Vehiculo → VehiculoDto`, `CreateVehiculoDto → Vehiculo`
-- 2.3.3 `OrdenServicioProfile` — mapear `OrdenServicio → OrdenServicioDto`
-- 2.3.4 `RepuestoProfile` — mapear `Repuesto → RepuestoDto`, `CreateRepuestoDto → Repuesto`
-- 2.3.5 `FacturaProfile` — mapear `Factura → FacturaDto`, incluir cálculo de `Total`
-- 2.3.6 `UsuarioProfile` — mapear `Usuario → UsuarioDto` (ocultar `PasswordHash`)
+- 2.3.1 `ClienteMappingConfig : IRegister` — mapear `Cliente → ClienteDto`, `CreateClienteDto → Persona + Cliente`
+- 2.3.2 `VehiculoMappingConfig : IRegister` — mapear `Vehiculo → VehiculoDto`, `CreateVehiculoDto → Vehiculo`
+- 2.3.3 `OrdenServicioMappingConfig : IRegister` — mapear `OrdenServicio → OrdenServicioDto`
+- 2.3.4 `RepuestoMappingConfig : IRegister` — mapear `Repuesto → RepuestoDto`, `CreateRepuestoDto → Repuesto`
+- 2.3.5 `FacturaMappingConfig : IRegister` — mapear `Factura → FacturaDto`, incluir cálculo de `Total`
+- 2.3.6 `UsuarioMappingConfig : IRegister` — mapear `Usuario → UsuarioDto` (ignorar `PasswordHash`)
 
 ### 2.4 Interfaces de servicios de aplicación (Puertos de entrada)
 
@@ -169,7 +169,7 @@
 ### 2.5 Implementaciones de casos de uso
 
 - 2.5.1 `ClienteService : IClienteService`
-  - Usa `IUnitOfWork` y `IMapper`
+  - Usa `IUnitOfWork` y `MapsterMapper.IMapper` (o `.Adapt<T>()`)
   - En `RegistrarClienteConVehiculoAsync`: crear `Persona`, `Cliente`, `DocumentoPersona`, `CorreoPersona`, `TelefonoPersona` y llamar `CommitAsync()` en una sola transacción
   - En `EliminarAsync`: verificar que no haya `OrdenesServicio` con estado activo; lanzar excepción de negocio si existen
 - 2.5.2 `VehiculoService : IVehiculoService`
@@ -239,11 +239,9 @@
   `**ClienteConfiguration**`
   - Tabla: `Clientes`; FK `Persona` (unique); relación 1:1 con `Persona`
   `**UsuarioConfiguration**`
-  - Tabla: `Usuarios`; FK `Persona` (unique); `PasswordHash` 255; relación N:N con `Rol` vía `UsuarioRoles`
+  - Tabla: `Usuarios`; FK `Persona` (unique); `PasswordHash` 255; relación N:N con `Rol` vía tabla intermedia `UsuarioRoles` (sin entidad, `HasMany/WithMany`)
   `**RolConfiguration**`
-  - Tabla: `Roles`; `NombreRol` unique 50
-  `**UsuarioRolConfiguration**`
-  - Tabla: `UsuarioRoles`; PK compuesta (`IdUsuario`, `IdRol`)
+  - Tabla: `Roles`; `NombreRol` unique 50; relación N:N con `Usuario`
   `**MarcaVehiculoConfiguration**`
   - Tabla: `MarcasVehiculo`; `NombreMarca` unique 80
   `**ModeloVehiculoConfiguration**`
@@ -314,7 +312,7 @@
 ### 3.5 Registro de dependencias
 
 - 3.5.1 Crear método de extensión `AddInfrastructure(this IServiceCollection services, IConfiguration config)`:
-  - Registrar `AutoTallerDbContext` con `UseMySql` leyendo cadena de conexión de `appsettings.json`
+  - Registrar `AutoTallerDbContext` con `UseNpgsql` leyendo cadena de conexión de `appsettings.json`
   - Registrar todos los repositorios: `services.AddScoped<IClienteRepository, ClienteRepository>()` etc.
   - Registrar `IUnitOfWork` → `UnitOfWork`
 
@@ -333,7 +331,7 @@
   - `services.AddScoped<IFacturaService, FacturaService>()`
   - `services.AddScoped<IUsuarioService, UsuarioService>()`
   - `services.AddScoped<IAuditoriaService, AuditoriaService>()`
-- 4.1.3 Registrar AutoMapper: `services.AddAutoMapper(typeof(ClienteProfile).Assembly)`
+- 4.1.3 Registrar Mapster: `services.AddMapster(typeof(ClienteMappingConfig).Assembly)`
 - 4.1.4 Configurar JWT Authentication:
   - Leer `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` de `appsettings.json`
   - `services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(...)`
@@ -423,7 +421,7 @@
 
 ### 4.5 `appsettings.json`
 
-- 4.5.1 Sección `ConnectionStrings:DefaultConnection` con cadena MySQL
+- 4.5.1 Sección `ConnectionStrings:DefaultConnection` con cadena PostgreSQL
 - 4.5.2 Sección `Jwt`: `Key`, `Issuer`, `Audience`, `ExpiresInMinutes`
 - 4.5.3 Sección `IpRateLimiting` con reglas por endpoint
 - 4.5.4 Sección `Logging` estándar
