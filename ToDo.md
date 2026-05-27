@@ -219,9 +219,9 @@
 
 ### 3.1 DbContext y configuración Fluent API
 
-- 3.1.1 Crear `AutoTallerDbContext : DbContext` con todos los `DbSet<T>` para cada entidad
-- 3.1.2 Sobrescribir `OnModelCreating` e invocar `modelBuilder.ApplyConfigurationsFromAssembly(...)` para cargar todas las configuraciones
-- 3.1.3 Crear clase de configuración para cada entidad usando `IEntityTypeConfiguration<T>`:
+- [x] 3.1.1 Crear `AutoTallerDbContext : DbContext` con todos los `DbSet<T>` para cada entidad
+- [x] 3.1.2 Sobrescribir `OnModelCreating` e invocar `modelBuilder.ApplyConfigurationsFromAssembly(...)` para cargar todas las configuraciones
+- [x] 3.1.3 Crear clase de configuración para cada entidad usando `IEntityTypeConfiguration<T>`:
   **`TipoDocumentoConfiguration`**
   - Tabla: `TiposDocumento`; PK: `IdTipoDocumento`; `Codigo` unique 10; `Nombre` unique 80
   `**PersonaConfiguration`**
@@ -273,7 +273,7 @@
 
 ### 3.2 Repositorios
 
-- 3.2.1 Implementar `GenericRepository<T> : IGenericRepository<T>` usando `AutoTallerDbContext`
+- [x] 3.2.1 Implementar `GenericRepository<T> : IGenericRepository<T>` usando `AutoTallerDbContext`
   - `GetByIdAsync` → `FindAsync(id)`
   - `GetAllAsync` → `ToListAsync()`
   - `FindAsync(predicate)` → `Where(predicate).ToListAsync()`
@@ -281,22 +281,22 @@
   - `AddAsync` → `AddAsync(entity)`
   - `Update` → `Update(entity)`
   - `Remove` → `Remove(entity)`
-- 3.2.2 Implementar `ClienteRepository : GenericRepository<Cliente>, IClienteRepository`
+- [x] 3.2.2 Implementar `ClienteRepository : GenericRepository<Cliente>, IClienteRepository`
   - Sobrescribir `GetAllAsync` para incluir `Include(c => c.Persona)`
   - Método extra: `ExisteConOrdenesActivasAsync(int idCliente)` → join con OrdenesServicio activas
-- 3.2.3 Implementar `VehiculoRepository : GenericRepository<Vehiculo>, IVehiculoRepository`
+- [x] 3.2.3 Implementar `VehiculoRepository : GenericRepository<Vehiculo>, IVehiculoRepository`
   - `ObtenerPorVinAsync(string vin)` → buscar con include de Modelo y Marca
   - `ExisteConOrdenesActivasAsync(int idVehiculo)`
-- 3.2.4 `OrdenServicioRepository : GenericRepository<OrdenServicio>, IOrdenServicioRepository`
+- [x] 3.2.4 `OrdenServicioRepository : GenericRepository<OrdenServicio>, IOrdenServicioRepository`
   - `GetPagedConFiltrosAsync(...)` → filtrar por estado, idMecanico, fechas, idCliente (via Vehiculo → HistorialPropietarios)
-- 3.2.5 `RepuestoRepository : GenericRepository<Repuesto>, IRepuestoRepository`
+- [x] 3.2.5 `RepuestoRepository : GenericRepository<Repuesto>, IRepuestoRepository`
   - `ListarConFiltrosAsync(...)` → filtrar por categoría, descripción, soloConStockMinimo
-- 3.2.6 Implementaciones simples (solo heredan `GenericRepository<T>`):
+- [x] 3.2.6 Implementaciones simples (solo heredan `GenericRepository<T>`):
   - `FacturaRepository`, `UsuarioRepository`, `AuditoriaRepository`, `DetalleOrdenRepository`
 
 ### 3.3 Unit of Work
 
-- 3.3.1 Implementar `UnitOfWork : IUnitOfWork`
+- [x] 3.3.1 Implementar `UnitOfWork : IUnitOfWork`
   - Recibir `AutoTallerDbContext` por inyección
   - Instanciar repositorios lazy o en constructor
   - `CommitAsync()` → `await _context.SaveChangesAsync()`
@@ -304,14 +304,14 @@
 
 ### 3.4 Migraciones EF Core
 
-- 3.4.1 Crear migración inicial: `dotnet ef migrations add InitialCreate --project Infrastructure --startup-project API`
-- 3.4.2 Verificar que la migración genere todas las tablas de la BD definida
-- 3.4.3 Aplicar migración: `dotnet ef database update`
-- 3.4.4 Crear migración de datos semilla (`SeedData`): insertar roles "Admin", "Mecánico", "Recepcionista"; insertar estados de orden "Pendiente", "En Proceso", "Completada", "Cancelada"; insertar tipos de acción de auditoría "Creación", "Actualización", "Eliminación"
+- [x] 3.4.1 Crear migración inicial: `dotnet ef migrations add InitialCreate --project Infrastructure --startup-project API`
+- [x] 3.4.2 Verificar que la migración genere todas las tablas de la BD definida
+- [x] 3.4.3 Aplicar migración: `dotnet ef database update`
+- [x] 3.4.4 Crear migración de datos semilla (`SeedData`): insertar roles "Admin", "Mecánico", "Recepcionista"; insertar estados de orden "Pendiente", "En Proceso", "Completada", "Cancelada"; insertar tipos de acción de auditoría "Creación", "Actualización", "Eliminación"
 
 ### 3.5 Registro de dependencias
 
-- 3.5.1 Crear método de extensión `AddInfrastructure(this IServiceCollection services, IConfiguration config)`:
+- [x] 3.5.1 Crear método de extensión `AddInfrastructure(this IServiceCollection services, IConfiguration config)`:
   - Registrar `AutoTallerDbContext` con `UseNpgsql` leyendo cadena de conexión de `appsettings.json`
   - Registrar todos los repositorios: `services.AddScoped<IClienteRepository, ClienteRepository>()` etc.
   - Registrar `IUnitOfWork` → `UnitOfWork`
