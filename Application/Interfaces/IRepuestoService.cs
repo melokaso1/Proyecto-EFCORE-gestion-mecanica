@@ -13,5 +13,6 @@ public interface IRepuestoService
         string? descripcion,
         int? idCategoria,
         bool? soloConStockMinimo);
+    Task<RepuestoDto?> ObtenerPorIdAsync(int id);
     Task AjustarStockAsync(int id, int cantidad);
 }

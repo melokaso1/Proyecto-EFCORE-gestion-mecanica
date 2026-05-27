@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Domain.Interfaces;
+using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IFacturaRepository, FacturaRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+        services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 
         return services;
     }

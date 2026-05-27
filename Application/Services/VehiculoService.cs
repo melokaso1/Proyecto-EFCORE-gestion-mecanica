@@ -58,6 +58,12 @@ public class VehiculoService(IUnitOfWork uow, IMapper mapper) : IVehiculoService
         return vehiculo is null ? null : mapper.Map<VehiculoDto>(vehiculo);
     }
 
+    public async Task<VehiculoDto?> ObtenerPorIdAsync(int id)
+    {
+        var vehiculo = await uow.Vehiculos.GetByIdAsync(id);
+        return vehiculo is null ? null : mapper.Map<VehiculoDto>(vehiculo);
+    }
+
     public async Task ActualizarAsync(int id, CreateVehiculoDto dto)
     {
         var vehiculo = await uow.Vehiculos.GetByIdAsync(id)

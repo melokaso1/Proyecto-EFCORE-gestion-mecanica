@@ -62,6 +62,12 @@ public class FacturaService(IUnitOfWork uow, IMapper mapper) : IFacturaService
         return mapper.Map<FacturaDto>(factura);
     }
 
+    public async Task<FacturaDto?> ObtenerPorIdAsync(int id)
+    {
+        var factura = await uow.Facturas.GetByIdAsync(id);
+        return factura is null ? null : mapper.Map<FacturaDto>(factura);
+    }
+
     public async Task<FacturaDto?> ObtenerPorOrdenAsync(int idOrdenServicio)
     {
         var factura = (await uow.Facturas.FindAsync(f => f.IdOrdenServicio == idOrdenServicio)).FirstOrDefault();

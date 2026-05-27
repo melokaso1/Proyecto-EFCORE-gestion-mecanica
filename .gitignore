@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+#user files
+ToDo.md
+
 # dotenv files
 .env
 

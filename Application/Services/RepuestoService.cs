@@ -72,6 +72,12 @@ public class RepuestoService(IUnitOfWork uow, IMapper mapper) : IRepuestoService
         };
     }
 
+    public async Task<RepuestoDto?> ObtenerPorIdAsync(int id)
+    {
+        var repuesto = await uow.Repuestos.GetByIdAsync(id);
+        return repuesto is null ? null : mapper.Map<RepuestoDto>(repuesto);
+    }
+
     public async Task AjustarStockAsync(int id, int cantidad)
     {
         var repuesto = await uow.Repuestos.GetByIdAsync(id)
