@@ -25,6 +25,8 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IAuditoriaService, AuditoriaService>();
         services.AddScoped<IClientePortalService, ClientePortalService>();
+        services.AddScoped<IDiagnosticoService, DiagnosticoService>();
+        services.AddScoped<ICajaService, CajaService>();
 
         return services;
     }

@@ -32,10 +32,19 @@
                          ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
                     Panel admin
                 </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
                 <NavLink href="usuarios"
                          class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
                          ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
                     Usuarios y roles
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="JefeMecanicos">
+                <NavLink href="jefe-mecanicos"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Aprobaciones
                 </NavLink>
             </AuthorizeView>
             <AuthorizeView Roles="Mecánico">
@@ -50,6 +59,13 @@
                          class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
                          ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
                     Recepción
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <NavLink href="caja"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Caja
                 </NavLink>
             </AuthorizeView>
             <AuthorizeView Roles="Admin,Recepcionista">
@@ -123,9 +139,16 @@
                 <NavLink href="admin"
                          class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
                          ActiveClass="bg-red-50 text-red-700 font-medium">Admin</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
                 <NavLink href="usuarios"
                          class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
                          ActiveClass="bg-red-50 text-red-700 font-medium">Usuarios</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="JefeMecanicos">
+                <NavLink href="jefe-mecanicos"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Aprobaciones</NavLink>
             </AuthorizeView>
             <AuthorizeView Roles="Mecánico">
                 <NavLink href="mecanico"
@@ -136,6 +159,11 @@
                 <NavLink href="recepcion"
                          class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
                          ActiveClass="bg-red-50 text-red-700 font-medium">Recepción</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <NavLink href="caja"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Caja</NavLink>
             </AuthorizeView>
             <AuthorizeView Roles="Admin,Recepcionista">
                 <NavLink href="clientes"

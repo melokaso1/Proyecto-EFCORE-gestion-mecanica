@@ -5,6 +5,7 @@ namespace Domain.Entities;
 public class OrdenServicio
 {
     public int IdOrdenServicio { get; set; }
+    public int IdCliente { get; set; }
     public int IdVehiculo { get; set; }
     public int IdTipoServicio { get; set; }
     public int IdMecanico { get; set; }
@@ -19,9 +20,14 @@ public class OrdenServicio
     public DateTime? FechaDecisionCosto { get; set; }
     public string? ComentarioCliente { get; set; }
     public Vehiculo? Vehiculo { get; set; }
+    public Cliente? Cliente { get; set; }
     public TipoServicio? TipoServicio { get; set; }
     public Usuario? Mecanico { get; set; }
     public EstadoOrden? EstadoOrden { get; set; }
+
+    public DiagnosticoOrden? Diagnostico { get; set; }
+    public ICollection<ReparacionItem> Reparaciones { get; set; } = [];
+    public ICollection<Pago> Pagos { get; set; } = [];
 
     public bool EstaActiva()
     {

@@ -15,8 +15,8 @@ public class FacturaService(IUnitOfWork uow, IMapper mapper) : IFacturaService
             ?? throw new NotFoundException($"Orden de servicio {idOrdenServicio} no encontrada.");
 
         var estadoOrden = await uow.EstadosOrden.GetByIdAsync(orden.IdEstadoOrden);
-        if (estadoOrden?.Nombre != EstadosOrden.Completada)
-            throw new BusinessRuleException("Solo se puede facturar una orden en estado Completada.");
+        if (estadoOrden?.Nombre is not (EstadosOrden.Completada or EstadosOrden.ListoParaEntrega or EstadosOrden.PendientePago or EstadosOrden.Pagado))
+            throw new BusinessRuleException("Solo se puede facturar una orden terminada/lista para entrega o con pago en curso.");
 
         var facturaExistente = (await uow.Facturas.FindAsync(f => f.IdOrdenServicio == idOrdenServicio)).FirstOrDefault();
         if (facturaExistente is not null)
@@ -25,16 +25,31 @@ public class FacturaService(IUnitOfWork uow, IMapper mapper) : IFacturaService
         var detallesOrden = await uow.DetallesOrden.FindAsync(d => d.IdOrdenServicio == idOrdenServicio);
         var totalRepuestos = detallesOrden.Sum(d => d.Cantidad * d.PrecioUnitarioAplicado);
 
+        var reparaciones = await uow.ReparacionesItem.FindAsync(r =>
+            r.IdOrdenServicio == idOrdenServicio && r.Estado == EstadosReparacionItem.Terminado);
+        var totalReparaciones = reparaciones.Sum(r => r.CostoEstimado);
+
         var factura = new Factura
         {
             IdOrdenServicio = idOrdenServicio,
             FechaFactura = DateTime.UtcNow,
             ManoObra = manoObra,
-            Total = manoObra + totalRepuestos
+            Total = manoObra + totalRepuestos + totalReparaciones
         };
 
         await uow.Facturas.AddAsync(factura);
         await uow.CommitAsync();
+
+        foreach (var rep in reparaciones.OrderBy(r => r.Orden))
+        {
+            await uow.DetallesFactura.AddAsync(new DetalleFactura
+            {
+                IdFactura = factura.IdFactura,
+                Concepto = $"Reparación: {rep.Descripcion}".Trim(),
+                Cantidad = 1,
+                PrecioUnitario = rep.CostoEstimado
+            });
+        }
 
         foreach (var detalle in detallesOrden)
         {

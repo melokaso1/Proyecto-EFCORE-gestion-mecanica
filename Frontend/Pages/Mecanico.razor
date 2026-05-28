@@ -2,6 +2,7 @@
 @layout MainLayout
 @attribute [Authorize(Roles = "Mecánico")]
 @inject IOrdenesService OrdenesService
+@inject NavigationManager Nav
 
 <PageTitle>Mis órdenes — Mecánicas Jholversito</PageTitle>
 
@@ -56,6 +57,7 @@
                             <th class="px-5 py-3">Estado</th>
                             <th class="px-5 py-3">Ingreso</th>
                             <th class="px-5 py-3">Entrega est.</th>
+                            <th class="px-5 py-3 text-right">Acción</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -78,6 +80,12 @@
                                 <td class="px-5 py-4 text-slate-600">
                                     @(orden.FechaEstimadaEntrega?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")
                                 </td>
+                                <td class="px-5 py-4 text-right">
+                                    <button class="px-3 py-1.5 rounded-lg text-xs bg-red-600 text-white hover:bg-red-700"
+                                            @onclick="() => AbrirOrden(orden.IdOrdenServicio)">
+                                        Diagnóstico
+                                    </button>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -94,7 +102,7 @@
     private List<OrdenServicioDto> ordenes = [];
     private int totalCount;
     private string? filtroActivo;
-    private readonly string?[] filtrosEstado = [null, "Pendiente", "En Proceso", "Completada"];
+    private readonly string?[] filtrosEstado = [null, "Pendiente", "En Proceso", "Completada", "Pendiente aprobación jefe", "Pendiente aprobación cliente"];
 
     protected override async Task OnInitializedAsync() => await CargarAsync();
 
@@ -132,4 +140,6 @@
         "Cancelada" => "bg-slate-100 text-slate-600",
         _ => "bg-slate-100 text-slate-700"
     };
+
+    private void AbrirOrden(int idOrdenServicio) => Nav.NavigateTo($"/mecanico/orden/{idOrdenServicio}");
 }

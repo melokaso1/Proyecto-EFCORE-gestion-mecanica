@@ -10,6 +10,8 @@ public class OrdenServicioRepository(AutoTallerDbContext context)
 {
     public override async Task<OrdenServicio?> GetByIdAsync(int id) =>
         await Context.OrdenesServicio
+            .Include(o => o.Cliente!)
+            .ThenInclude(c => c.Persona)
             .Include(o => o.Vehiculo)
             .Include(o => o.TipoServicio)
             .Include(o => o.Mecanico!)
@@ -27,6 +29,8 @@ public class OrdenServicioRepository(AutoTallerDbContext context)
         DateTime? hasta)
     {
         var query = Context.OrdenesServicio
+            .Include(o => o.Cliente!)
+            .ThenInclude(c => c.Persona)
             .Include(o => o.Vehiculo)
             .Include(o => o.TipoServicio)
             .Include(o => o.Mecanico!)
@@ -47,12 +51,7 @@ public class OrdenServicioRepository(AutoTallerDbContext context)
             query = query.Where(o => o.EstadoOrden != null && o.EstadoOrden.Nombre == estado);
 
         if (idCliente is not null)
-        {
-            var idsVehiculos = Context.HistorialPropietariosVehiculo
-                .Where(h => h.IdCliente == idCliente)
-                .Select(h => h.IdVehiculo);
-            query = query.Where(o => idsVehiculos.Contains(o.IdVehiculo));
-        }
+            query = query.Where(o => o.IdCliente == idCliente);
 
         var total = await query.CountAsync();
         var items = await query

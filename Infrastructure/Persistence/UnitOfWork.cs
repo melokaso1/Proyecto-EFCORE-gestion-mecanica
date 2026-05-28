@@ -29,6 +29,9 @@ public class UnitOfWork(AutoTallerDbContext context) : IUnitOfWork, IDisposable
     private IGenericRepository<Rol>? _roles;
     private IGenericRepository<CategoriaRepuesto>? _categoriasRepuesto;
     private IGenericRepository<DetalleFactura>? _detallesFactura;
+    private IGenericRepository<DiagnosticoOrden>? _diagnosticosOrden;
+    private IGenericRepository<ReparacionItem>? _reparacionesItem;
+    private IGenericRepository<Pago>? _pagos;
 
     public IClienteRepository Clientes => _clientes ??= new ClienteRepository(context);
     public IVehiculoRepository Vehiculos => _vehiculos ??= new VehiculoRepository(context);
@@ -51,6 +54,9 @@ public class UnitOfWork(AutoTallerDbContext context) : IUnitOfWork, IDisposable
     public IGenericRepository<Rol> Roles => _roles ??= new GenericRepository<Rol>(context);
     public IGenericRepository<CategoriaRepuesto> CategoriasRepuesto => _categoriasRepuesto ??= new GenericRepository<CategoriaRepuesto>(context);
     public IGenericRepository<DetalleFactura> DetallesFactura => _detallesFactura ??= new GenericRepository<DetalleFactura>(context);
+    public IGenericRepository<DiagnosticoOrden> DiagnosticosOrden => _diagnosticosOrden ??= new GenericRepository<DiagnosticoOrden>(context);
+    public IGenericRepository<ReparacionItem> ReparacionesItem => _reparacionesItem ??= new GenericRepository<ReparacionItem>(context);
+    public IGenericRepository<Pago> Pagos => _pagos ??= new GenericRepository<Pago>(context);
 
     public Task<int> CommitAsync() => context.SaveChangesAsync();
 

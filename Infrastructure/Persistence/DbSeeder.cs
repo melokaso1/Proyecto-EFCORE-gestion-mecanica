@@ -9,6 +9,7 @@ namespace Infrastructure.Persistence;
 public static class DbSeeder
 {
     private const string DominioDefault = "jholversito.com";
+    private const string DominioDemo = "mecanicas.com";
     private const string CodigoTelefonoDefault = "+57";
 
     public static async Task SeedAsync(IServiceProvider services)
@@ -32,6 +33,7 @@ public static class DbSeeder
 
         await SeedTiposDocumentoAsync(context, logger);
         await SeedDominioCorreoAsync(context, logger);
+        await SeedDominioCorreoAsync(context, logger, DominioDemo);
         await SeedCodigoTelefonoAsync(context, logger);
         await SeedMarcasModelosAsync(context, logger);
         await SeedTiposServicioAsync(context, logger);
@@ -39,6 +41,7 @@ public static class DbSeeder
         await SeedUsuariosAsync(context, logger);
         await SeedClientesDemoAsync(context, logger);
         await SeedUsuariosClientesDemoAsync(context, logger);
+        await AsegurarClientesParaUsuariosConRolAsync(context, logger);
         await SeedRepuestosDemoAsync(context, logger);
         await SeedVehiculosDemoAsync(context, logger);
         await SeedOrdenesDemoAsync(context, logger);
@@ -81,6 +84,16 @@ public static class DbSeeder
         context.DominiosCorreo.Add(new DominioCorreo { Dominio = DominioDefault });
         await context.SaveChangesAsync();
         logger.LogInformation("Seed: dominio de correo {Dominio} creado.", DominioDefault);
+    }
+
+    private static async Task SeedDominioCorreoAsync(AutoTallerDbContext context, ILogger logger, string dominio)
+    {
+        if (await context.DominiosCorreo.AnyAsync(d => d.Dominio == dominio))
+            return;
+
+        context.DominiosCorreo.Add(new DominioCorreo { Dominio = dominio });
+        await context.SaveChangesAsync();
+        logger.LogInformation("Seed: dominio de correo {Dominio} creado.", dominio);
     }
 
     private static async Task SeedCodigoTelefonoAsync(AutoTallerDbContext context, ILogger logger)
@@ -175,24 +188,37 @@ public static class DbSeeder
 
     private static async Task SeedUsuariosAsync(AutoTallerDbContext context, ILogger logger)
     {
-        var dominio = await context.DominiosCorreo.FirstOrDefaultAsync(d => d.Dominio == DominioDefault);
-        if (dominio is null)
+        var dominioSistema = await context.DominiosCorreo.FirstOrDefaultAsync(d => d.Dominio == DominioDefault);
+        var dominioDemo = await context.DominiosCorreo.FirstOrDefaultAsync(d => d.Dominio == DominioDemo);
+        if (dominioSistema is null || dominioDemo is null)
             return;
 
         await CrearUsuarioSiNoExisteAsync(
-            context, dominio, "Admin", "Sistema", "admin", "Admin123!", "Admin", logger);
+            context, dominioSistema, "Admin", "Sistema", "admin", "Admin123!", "Admin", logger);
 
         await CrearUsuarioSiNoExisteAsync(
-            context, dominio, "Laura", "Recepción", "recepcion", "Recep123!", "Recepcionista", logger);
+            context, dominioSistema, "Laura", "Recepción", "recepcion", "Recep123!", "Recepcionista", logger);
 
         await CrearUsuarioSiNoExisteAsync(
-            context, dominio, "María", "González", "recepcion2", "Recep123!", "Recepcionista", logger);
+            context, dominioSistema, "María", "González", "recepcion2", "Recep123!", "Recepcionista", logger);
 
         await CrearUsuarioSiNoExisteAsync(
-            context, dominio, "Pedro", "Herrera", "mecanico1", "Mec123!", "Mecánico", logger);
+            context, dominioSistema, "Pedro", "Herrera", "mecanico1", "Mec123!", "Mecánico", logger);
 
         await CrearUsuarioSiNoExisteAsync(
-            context, dominio, "Diego", "Castro", "mecanico2", "Mec123!", "Mecánico", logger);
+            context, dominioSistema, "Diego", "Castro", "mecanico2", "Mec123!", "Mecánico", logger);
+
+        // Cuentas fijas (demo) para login rápido
+        await CrearUsuarioSiNoExisteAsync(
+            context, dominioDemo, "Cliente", "Demo", "cliente", "Cliente123!", "Cliente", logger);
+        await CrearUsuarioSiNoExisteAsync(
+            context, dominioDemo, "Mecánico", "Demo", "mecanico", "Mec123!", "Mecánico", logger);
+        await CrearUsuarioSiNoExisteAsync(
+            context, dominioDemo, "Recepción", "Demo", "recepcion", "Recep123!", "Recepcionista", logger);
+        await CrearUsuarioSiNoExisteAsync(
+            context, dominioDemo, "Jefe", "Mecánicos", "jefe", "Jefe123!", "JefeMecanicos", logger);
+        await CrearUsuarioSiNoExisteAsync(
+            context, dominioDemo, "Jefe", "Bodega", "bodega", "Bodega123!", "JefeBodega", logger);
     }
 
     private static async Task CrearUsuarioSiNoExisteAsync(
@@ -379,6 +405,39 @@ public static class DbSeeder
         }
     }
 
+    /// <summary>
+    /// Usuarios con rol Cliente deben tener registro en la tabla Clientes para usar el portal.
+    /// </summary>
+    private static async Task AsegurarClientesParaUsuariosConRolAsync(AutoTallerDbContext context, ILogger logger)
+    {
+        var usuariosCliente = await context.Usuarios
+            .Include(u => u.Roles)
+            .Where(u => u.Estado && u.Roles.Any(r => r.NombreRol == "Cliente"))
+            .ToListAsync();
+
+        var creados = 0;
+        foreach (var usuario in usuariosCliente)
+        {
+            var yaTieneCliente = await context.Clientes
+                .AnyAsync(c => c.IdPersona == usuario.IdPersona && c.Estado);
+            if (yaTieneCliente)
+                continue;
+
+            context.Clientes.Add(new Cliente
+            {
+                IdPersona = usuario.IdPersona,
+                Estado = true
+            });
+            creados++;
+        }
+
+        if (creados > 0)
+        {
+            await context.SaveChangesAsync();
+            logger.LogInformation("Seed: {Count} registros Cliente vinculados a usuarios con rol Cliente.", creados);
+        }
+    }
+
     private static async Task SeedRepuestosDemoAsync(AutoTallerDbContext context, ILogger logger)
     {
         if (await context.Repuestos.AnyAsync())
@@ -515,6 +574,10 @@ public static class DbSeeder
         if (mecanicos.Count == 0 || vehiculos.Count == 0 || tipos.Count == 0)
             return;
 
+        var propietarios = await context.HistorialPropietariosVehiculo
+            .Where(h => h.FechaFin == null)
+            .ToDictionaryAsync(h => h.IdVehiculo, h => h.IdCliente);
+
         var ordenes = new[]
         {
             (0, "Mantenimiento preventivo", EstadosOrden.Pendiente, -2, null as string, (decimal?)180000m, "Cambio de filtros + revisión general", null as bool?),
@@ -532,9 +595,11 @@ public static class DbSeeder
             var vehiculo = vehiculos[vehIdx];
             var tipo = tipos.FirstOrDefault(t => t.Nombre == tipoNombre) ?? tipos[0];
             var mecanico = mecanicos[i % mecanicos.Count];
+            var idCliente = propietarios.GetValueOrDefault(vehiculo.IdVehiculo, 1);
 
             context.OrdenesServicio.Add(new OrdenServicio
             {
+                IdCliente = idCliente,
                 IdVehiculo = vehiculo.IdVehiculo,
                 IdTipoServicio = tipo.IdTipoServicio,
                 IdMecanico = mecanico.IdUsuario,

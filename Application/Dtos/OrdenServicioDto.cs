@@ -17,6 +17,7 @@ public class OrdenServicioDto
 
 public class CreateOrdenServicioDto
 {
+    public int IdCliente { get; set; }
     public int IdVehiculo { get; set; }
     public int IdTipoServicio { get; set; }
     public int IdMecanico { get; set; }

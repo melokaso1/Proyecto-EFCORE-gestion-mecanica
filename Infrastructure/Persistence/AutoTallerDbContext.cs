@@ -23,6 +23,9 @@ public class AutoTallerDbContext(DbContextOptions<AutoTallerDbContext> options) 
     public DbSet<TipoServicio> TiposServicio => Set<TipoServicio>();
     public DbSet<EstadoOrden> EstadosOrden => Set<EstadoOrden>();
     public DbSet<OrdenServicio> OrdenesServicio => Set<OrdenServicio>();
+    public DbSet<DiagnosticoOrden> DiagnosticosOrden => Set<DiagnosticoOrden>();
+    public DbSet<ReparacionItem> ReparacionesItem => Set<ReparacionItem>();
+    public DbSet<Pago> Pagos => Set<Pago>();
     public DbSet<CategoriaRepuesto> CategoriasRepuesto => Set<CategoriaRepuesto>();
     public DbSet<Repuesto> Repuestos => Set<Repuesto>();
     public DbSet<DetalleOrdenRepuesto> DetalleOrdenRepuestos => Set<DetalleOrdenRepuesto>();

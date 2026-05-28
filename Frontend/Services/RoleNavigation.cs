@@ -8,6 +8,8 @@ public static class RoleNavigation
     {
         if (user.IsInRole("Admin"))
             return "/admin";
+        if (user.IsInRole("JefeMecanicos"))
+            return "/jefe-mecanicos";
         if (user.IsInRole("Mecánico"))
             return "/mecanico";
         if (user.IsInRole("Recepcionista"))

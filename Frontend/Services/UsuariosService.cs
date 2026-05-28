@@ -29,7 +29,7 @@ public class UsuariosService(HttpClient http, AuthService auth) : IUsuariosServi
         PostRegistrationAsync("api/usuarios/registro/admin", dto, sendAuth: true);
 
     public Task<(bool Success, string? Error)> RegisterUsuarioAsync(RegisterUserDto dto) =>
-        PostRegistrationAsync("api/usuarios/registro/usuario", dto, sendAuth: false);
+        PostRegistrationAsync("api/usuarios/registro/usuario", dto, sendAuth: true);
 
     public async Task<PagedUsuariosResult> GetUsuariosAsync(int page, int size)
     {

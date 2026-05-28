@@ -17,6 +17,8 @@ public class RolConfiguration : IEntityTypeConfiguration<Rol>
             new Rol { IdRol = 1, NombreRol = "Admin" },
             new Rol { IdRol = 2, NombreRol = "Mecánico" },
             new Rol { IdRol = 3, NombreRol = "Recepcionista" },
-            new Rol { IdRol = 4, NombreRol = "Cliente" });
+            new Rol { IdRol = 4, NombreRol = "Cliente" },
+            new Rol { IdRol = 5, NombreRol = "JefeMecanicos" },
+            new Rol { IdRol = 6, NombreRol = "JefeBodega" });
     }
 }

@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.UseUrls("http://localhost:5249");
+
 // In "Production" while running from source (dotnet run --no-launch-profile),
 // Static Web Assets may not be enabled by default, which breaks Blazor Server
 // script loading (/_framework/blazor.server.js). Enabling it here keeps the app
 // runnable regardless of launch profile.
 builder.WebHost.UseStaticWebAssets();
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5043";
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5000";
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
@@ -26,6 +28,8 @@ builder.Services.AddScoped<ISeguimientoService, SeguimientoService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEmpleadosService, EmpleadosService>();
 builder.Services.AddScoped<IClientePortalService, ClientePortalService>();
+builder.Services.AddScoped<IDiagnosticoClientService, DiagnosticoClientService>();
+builder.Services.AddScoped<ICajaClientService, CajaClientService>();
 
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 

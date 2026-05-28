@@ -12,6 +12,8 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
+builder.WebHost.UseUrls("http://localhost:5000");
+
 // #region agent log
 Api.DebugSessionLogger.Log(
     location: "Api/Program.cs:startup",

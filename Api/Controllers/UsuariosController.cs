@@ -35,7 +35,7 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
 
     /// <summary>Lista usuarios paginados.</summary>
     [HttpGet]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin,Recepcionista")]
     public async Task<ActionResult<IEnumerable<UsuarioDto>>> Listar(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10)
@@ -87,9 +87,9 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         }
     }
 
-    /// <summary>Registro público de personal (sin rol; el admin lo asigna).</summary>
+    /// <summary>Registro de personal por admin o recepcionista (sin rol; el admin lo asigna).</summary>
     [HttpPost("registro/usuario")]
-    [AllowAnonymous]
+    [Authorize(Roles = "Admin,Recepcionista")]
     public async Task<ActionResult<UsuarioDto>> RegistrarUsuario([FromBody] RegistroUsuarioDto dto)
     {
         try
@@ -109,7 +109,7 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
 
     /// <summary>Registra un nuevo usuario.</summary>
     [HttpPost]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin,Recepcionista")]
     public async Task<ActionResult<UsuarioDto>> Crear([FromBody] CreateUsuarioDto dto)
     {
         var usuario = await usuarioService.CrearAsync(dto);
@@ -118,7 +118,7 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
 
     /// <summary>Asigna un rol a un usuario.</summary>
     [HttpPatch("{id:int}/rol")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin,Recepcionista")]
     public async Task<IActionResult> AsignarRol(int id, [FromBody] AsignarRolRequest request)
     {
         try

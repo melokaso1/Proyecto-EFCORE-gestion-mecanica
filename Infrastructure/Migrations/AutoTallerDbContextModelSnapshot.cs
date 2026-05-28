@@ -225,6 +225,42 @@ namespace Infrastructure.Migrations
                     b.ToTable("DetalleOrdenRepuestos", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.DiagnosticoOrden", b =>
+                {
+                    b.Property<int>("IdDiagnosticoOrden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdDiagnosticoOrden"));
+
+                    b.Property<DateTime>("FechaDiagnostico")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Hallazgos")
+                        .HasColumnType("text");
+
+                    b.Property<int>("IdMecanico")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IdOrdenServicio")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Recomendaciones")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SintomasReportados")
+                        .HasColumnType("text");
+
+                    b.HasKey("IdDiagnosticoOrden");
+
+                    b.HasIndex("IdMecanico");
+
+                    b.HasIndex("IdOrdenServicio")
+                        .IsUnique();
+
+                    b.ToTable("DiagnosticosOrden", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.DocumentoPersona", b =>
                 {
                     b.Property<int>("IdDocumentoPersona")
@@ -318,6 +354,71 @@ namespace Infrastructure.Migrations
                         {
                             IdEstadoOrden = 4,
                             Nombre = "Cancelada"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 5,
+                            Nombre = "Recibido"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 6,
+                            Nombre = "Diagnóstico en proceso"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 7,
+                            Nombre = "Pendiente aprobación jefe"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 8,
+                            Nombre = "Pendiente aprobación cliente"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 9,
+                            Nombre = "Rechazado por cliente"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 10,
+                            Nombre = "Aprobado parcial"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 11,
+                            Nombre = "Aprobado total"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 12,
+                            Nombre = "Reparación en proceso"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 13,
+                            Nombre = "Listo para entrega"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 14,
+                            Nombre = "Pendiente de pago"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 15,
+                            Nombre = "Pagado"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 16,
+                            Nombre = "Entregado"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 17,
+                            Nombre = "Cerrado"
                         });
                 });
 
@@ -456,6 +557,9 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("FechaIngreso")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("IdCliente")
+                        .HasColumnType("integer");
+
                     b.Property<int>("IdEstadoOrden")
                         .HasColumnType("integer");
 
@@ -476,6 +580,8 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("IdOrdenServicio");
 
+                    b.HasIndex("IdCliente");
+
                     b.HasIndex("IdEstadoOrden");
 
                     b.HasIndex("IdMecanico");
@@ -485,6 +591,39 @@ namespace Infrastructure.Migrations
                     b.HasIndex("IdVehiculo");
 
                     b.ToTable("OrdenesServicio", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Pago", b =>
+                {
+                    b.Property<int>("IdPago")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPago"));
+
+                    b.Property<DateTime>("FechaPago")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IdOrdenServicio")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Metodo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Referencia")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.HasKey("IdPago");
+
+                    b.HasIndex("IdOrdenServicio");
+
+                    b.ToTable("Pagos", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Persona", b =>
@@ -513,6 +652,73 @@ namespace Infrastructure.Migrations
                     b.HasKey("IdPersona");
 
                     b.ToTable("Personas", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.ReparacionItem", b =>
+                {
+                    b.Property<int>("IdReparacionItem")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdReparacionItem"));
+
+                    b.Property<bool?>("AprobadoPorCliente")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("AprobadoPorJefe")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ComentarioCliente")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ComentarioJefe")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("CostoEstimado")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<DateTime?>("FechaDecisionCliente")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaDecisionJefe")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaFin")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaInicio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("HorasManoObraEstimada")
+                        .HasColumnType("numeric");
+
+                    b.Property<int?>("IdMecanico")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IdOrdenServicio")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("integer");
+
+                    b.HasKey("IdReparacionItem");
+
+                    b.HasIndex("IdMecanico");
+
+                    b.HasIndex("IdOrdenServicio", "Orden")
+                        .IsUnique();
+
+                    b.ToTable("ReparacionesItem", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Repuesto", b =>
@@ -601,6 +807,16 @@ namespace Infrastructure.Migrations
                         {
                             IdRol = 4,
                             NombreRol = "Cliente"
+                        },
+                        new
+                        {
+                            IdRol = 5,
+                            NombreRol = "JefeMecanicos"
+                        },
+                        new
+                        {
+                            IdRol = 6,
+                            NombreRol = "JefeBodega"
                         });
                 });
 
@@ -918,6 +1134,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Domain.Entities.DiagnosticoOrden", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", "Mecanico")
+                        .WithMany()
+                        .HasForeignKey("IdMecanico")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.OrdenServicio", "OrdenServicio")
+                        .WithOne("Diagnostico")
+                        .HasForeignKey("Domain.Entities.DiagnosticoOrden", "IdOrdenServicio")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Mecanico");
+
+                    b.Navigation("OrdenServicio");
+                });
+
             modelBuilder.Entity("Domain.Entities.DocumentoPersona", b =>
                 {
                     b.HasOne("Domain.Entities.Persona", null)
@@ -978,6 +1213,12 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.OrdenServicio", b =>
                 {
+                    b.HasOne("Domain.Entities.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Domain.Entities.EstadoOrden", "EstadoOrden")
                         .WithMany()
                         .HasForeignKey("IdEstadoOrden")
@@ -1002,6 +1243,8 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Cliente");
+
                     b.Navigation("EstadoOrden");
 
                     b.Navigation("Mecanico");
@@ -1009,6 +1252,35 @@ namespace Infrastructure.Migrations
                     b.Navigation("TipoServicio");
 
                     b.Navigation("Vehiculo");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Pago", b =>
+                {
+                    b.HasOne("Domain.Entities.OrdenServicio", "OrdenServicio")
+                        .WithMany("Pagos")
+                        .HasForeignKey("IdOrdenServicio")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OrdenServicio");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ReparacionItem", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", "Mecanico")
+                        .WithMany()
+                        .HasForeignKey("IdMecanico")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.OrdenServicio", "OrdenServicio")
+                        .WithMany("Reparaciones")
+                        .HasForeignKey("IdOrdenServicio")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Mecanico");
+
+                    b.Navigation("OrdenServicio");
                 });
 
             modelBuilder.Entity("Domain.Entities.Repuesto", b =>
@@ -1079,6 +1351,15 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Factura", b =>
                 {
                     b.Navigation("Detalles");
+                });
+
+            modelBuilder.Entity("Domain.Entities.OrdenServicio", b =>
+                {
+                    b.Navigation("Diagnostico");
+
+                    b.Navigation("Pagos");
+
+                    b.Navigation("Reparaciones");
                 });
 
             modelBuilder.Entity("Domain.Entities.Persona", b =>

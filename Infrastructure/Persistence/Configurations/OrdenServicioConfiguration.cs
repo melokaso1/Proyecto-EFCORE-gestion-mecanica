@@ -17,6 +17,11 @@ public class OrdenServicioConfiguration : IEntityTypeConfiguration<OrdenServicio
             .HasForeignKey(o => o.IdVehiculo)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(o => o.Cliente)
+            .WithMany()
+            .HasForeignKey(o => o.IdCliente)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(o => o.TipoServicio)
             .WithMany()
             .HasForeignKey(o => o.IdTipoServicio)

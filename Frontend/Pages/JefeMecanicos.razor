@@ -1,0 +1,127 @@
+@page "/jefe-mecanicos"
+@layout MainLayout
+@attribute [Authorize(Roles = "JefeMecanicos")]
+@inject IDiagnosticoClientService Diagnostico
+
+<PageTitle>Aprobaciones — Jefe de mecánicos</PageTitle>
+
+<div class="max-w-6xl mx-auto space-y-6 pb-10">
+    <header class="border-b border-slate-200 pb-6">
+        <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Jefe de mecánicos</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Aprobación de reparaciones</h1>
+        <p class="text-sm text-slate-600 mt-2">Revisa las reparaciones propuestas por el mecánico y apruébalas o recházalas.</p>
+    </header>
+
+    @if (_loading)
+    {
+        <div class="space-y-3">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="h-16 animate-pulse rounded-xl bg-slate-200/80"></div>
+            }
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_error</div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center">
+            <p class="text-slate-600">No hay reparaciones pendientes de aprobación.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-5 py-3">Orden</th>
+                            <th class="px-5 py-3">Ítem</th>
+                            <th class="px-5 py-3">Descripción</th>
+                            <th class="px-5 py-3">Costo est.</th>
+                            <th class="px-5 py-3">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var it in _items)
+                        {
+                            <tr class="hover:bg-slate-50/80">
+                                <td class="px-5 py-4 font-medium text-slate-900">#@it.IdOrdenServicio</td>
+                                <td class="px-5 py-4 text-slate-700">@it.Orden</td>
+                                <td class="px-5 py-4 text-slate-800">@it.Descripcion</td>
+                                <td class="px-5 py-4 text-slate-700">@it.CostoEstimado.ToString("C0")</td>
+                                <td class="px-5 py-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button class="px-3 py-1.5 rounded-lg text-xs bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                                                disabled="@_saving"
+                                                @onclick="() => DecidirAsync(it, true)">
+                                            Aprobar
+                                        </button>
+                                        <button class="px-3 py-1.5 rounded-lg text-xs bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                                                disabled="@_saving"
+                                                @onclick="() => DecidirAsync(it, false)">
+                                            Rechazar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private List<ReparacionItemDto> _items = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _items = await Diagnostico.PendientesJefeAsync(page: 1, size: 100);
+        }
+        catch
+        {
+            _error = "No se pudieron cargar los pendientes. Comprueba que la API esté en ejecución.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task DecidirAsync(ReparacionItemDto it, bool aprobar)
+    {
+        if (_saving)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            await Diagnostico.DecidirJefeAsync(it.IdOrdenServicio, it.IdReparacionItem, aprobar, comentario: null);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo registrar la decisión. {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}
+

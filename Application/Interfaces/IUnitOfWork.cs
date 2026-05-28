@@ -26,5 +26,8 @@ public interface IUnitOfWork
     IGenericRepository<Rol> Roles { get; }
     IGenericRepository<CategoriaRepuesto> CategoriasRepuesto { get; }
     IGenericRepository<DetalleFactura> DetallesFactura { get; }
+    IGenericRepository<DiagnosticoOrden> DiagnosticosOrden { get; }
+    IGenericRepository<ReparacionItem> ReparacionesItem { get; }
+    IGenericRepository<Pago> Pagos { get; }
     Task<int> CommitAsync();
 }

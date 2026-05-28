@@ -48,6 +48,18 @@ public class ClientePortalService(HttpClient http, AuthService auth) : IClienteP
         using var response = await http.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<List<ReparacionItemDto>> GetReparacionesOrdenAsync(int idOrdenServicio)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/portalcliente/ordenes/{idOrdenServicio}/reparaciones");
+        auth.ApplyAuthorization(request);
+
+        using var response = await http.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<ReparacionItemDto>>(JsonOptions) ?? [];
+    }
 }
 
 public class PagedClientePortalOrdenesResult

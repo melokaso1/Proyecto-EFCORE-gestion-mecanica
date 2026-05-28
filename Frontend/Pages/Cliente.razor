@@ -1,6 +1,7 @@
 @page "/cliente"
 @using Frontend.Models
 @inject IClientePortalService Portal
+@inject IDiagnosticoClientService Diagnostico
 @inject NavigationManager Nav
 
 <AuthorizeView Roles="Cliente">
@@ -110,6 +111,63 @@
                                     </div>
                                 }
                             </div>
+
+                            <div class="pt-2 border-t border-slate-100 space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs text-slate-500">Reparaciones</p>
+                                    <button class="text-xs px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50"
+                                            @onclick="() => ToggleReparacionesAsync(o.IdOrdenServicio)">
+                                        @(_reparacionesOpenId == o.IdOrdenServicio ? "Ocultar" : "Ver")
+                                    </button>
+                                </div>
+
+                                @if (_reparacionesOpenId == o.IdOrdenServicio)
+                                {
+                                    @if (_reparacionesLoading)
+                                    {
+                                        <div class="text-sm text-slate-600">Cargando reparaciones...</div>
+                                    }
+                                    else if (_reparaciones.TryGetValue(o.IdOrdenServicio, out var items) && items.Count > 0)
+                                    {
+                                        <div class="space-y-2">
+                                            @foreach (var it in items)
+                                            {
+                                                <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="min-w-0">
+                                                            <p class="text-sm font-semibold text-slate-900">@it.Descripcion</p>
+                                                            <p class="text-xs text-slate-500">Costo: @it.CostoEstimado.ToString("C0")</p>
+                                                        </div>
+                                                        <span class="text-xs px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700">
+                                                            @it.Estado
+                                                        </span>
+                                                    </div>
+
+                                                    @if (it.Estado == "Pendiente decisión cliente")
+                                                    {
+                                                        <div class="flex flex-col sm:flex-row gap-2 pt-3">
+                                                            <button class="px-4 py-2 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                                                                    disabled="@_saving"
+                                                                    @onclick="() => DecidirReparacionAsync(o.IdOrdenServicio, it.IdReparacionItem, true)">
+                                                                Aceptar
+                                                            </button>
+                                                            <button class="px-4 py-2 rounded-lg text-sm bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                                                                    disabled="@_saving"
+                                                                    @onclick="() => DecidirReparacionAsync(o.IdOrdenServicio, it.IdReparacionItem, false)">
+                                                                Rechazar
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-sm text-slate-600">No hay reparaciones disponibles para esta orden.</div>
+                                    }
+                                }
+                            </div>
                         </div>
                     }
                 </div>
@@ -132,6 +190,9 @@
     private bool _saving;
     private string? _error;
     private List<ClientePortalOrden> _ordenes = [];
+    private int? _reparacionesOpenId;
+    private bool _reparacionesLoading;
+    private readonly Dictionary<int, List<ReparacionItemDto>> _reparaciones = new();
 
     protected override async Task OnInitializedAsync() => await RecargarAsync();
 
@@ -182,5 +243,57 @@
         o.CostoAprobado.Value ? "Aceptado" : "Rechazado";
 
     private void GoLogin() => Nav.NavigateTo("/login", replace: true);
+
+    private async Task ToggleReparacionesAsync(int idOrdenServicio)
+    {
+        if (_reparacionesOpenId == idOrdenServicio)
+        {
+            _reparacionesOpenId = null;
+            return;
+        }
+
+        _reparacionesOpenId = idOrdenServicio;
+        _reparacionesLoading = true;
+        try
+        {
+            var items = await Portal.GetReparacionesOrdenAsync(idOrdenServicio);
+            _reparaciones[idOrdenServicio] = items;
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudieron cargar las reparaciones. {ex.Message}";
+        }
+        finally
+        {
+            _reparacionesLoading = false;
+        }
+    }
+
+    private async Task DecidirReparacionAsync(int idOrdenServicio, int idReparacionItem, bool aprobar)
+    {
+        if (_saving)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var decisiones = new Dictionary<int, DecisionClienteDto>
+            {
+                [idReparacionItem] = new() { Aprobar = aprobar, Comentario = null }
+            };
+            var updated = await Diagnostico.DecidirClienteAsync(idOrdenServicio, decisiones);
+            _reparaciones[idOrdenServicio] = updated;
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo enviar la decisión. {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
 }
 

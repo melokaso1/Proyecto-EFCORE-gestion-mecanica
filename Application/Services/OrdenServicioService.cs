@@ -14,6 +14,9 @@ public class OrdenServicioService(
 {
     public async Task<OrdenServicioDto> CrearOrdenAsync(CreateOrdenServicioDto dto)
     {
+        var cliente = await uow.Clientes.GetByIdAsync(dto.IdCliente)
+            ?? throw new NotFoundException($"Cliente {dto.IdCliente} no encontrado.");
+
         var vehiculo = await uow.Vehiculos.GetByIdAsync(dto.IdVehiculo)
             ?? throw new NotFoundException($"Vehículo {dto.IdVehiculo} no encontrado.");
 
@@ -33,6 +36,7 @@ public class OrdenServicioService(
 
         var orden = new OrdenServicio
         {
+            IdCliente = cliente.IdCliente,
             IdVehiculo = dto.IdVehiculo,
             IdTipoServicio = dto.IdTipoServicio,
             IdMecanico = dto.IdMecanico,
@@ -125,7 +129,9 @@ public class OrdenServicioService(
         {
             await CargarRelacionesOrdenAsync(orden);
             var dto = mapper.Map<OrdenServicioDto>(orden);
-            dto.ClienteNombre = await ObtenerNombreClienteVehiculoAsync(orden.IdVehiculo);
+            dto.ClienteNombre = orden.Cliente?.Persona is null
+                ? string.Empty
+                : $"{orden.Cliente.Persona.Nombres} {orden.Cliente.Persona.Apellidos}".Trim();
             dtos.Add(dto);
         }
 
@@ -146,7 +152,9 @@ public class OrdenServicioService(
 
         await CargarRelacionesOrdenAsync(orden);
         var dto = mapper.Map<OrdenServicioDto>(orden);
-        dto.ClienteNombre = await ObtenerNombreClienteVehiculoAsync(orden.IdVehiculo);
+        dto.ClienteNombre = orden.Cliente?.Persona is null
+            ? string.Empty
+            : $"{orden.Cliente.Persona.Nombres} {orden.Cliente.Persona.Apellidos}".Trim();
         return dto;
     }
 
@@ -177,7 +185,7 @@ public class OrdenServicioService(
             if (orden is null)
                 return null;
 
-            if (!await ClienteEsPropietarioVehiculoAsync(cliente.IdCliente, orden.IdVehiculo))
+            if (orden.IdCliente != cliente.IdCliente)
                 return null;
         }
         else if (!string.IsNullOrWhiteSpace(vin))
@@ -186,10 +194,7 @@ public class OrdenServicioService(
             if (vehiculo is null)
                 return null;
 
-            if (!await ClienteEsPropietarioVehiculoAsync(cliente.IdCliente, vehiculo.IdVehiculo))
-                return null;
-
-            var ordenes = await uow.OrdenesServicio.FindAsync(o => o.IdVehiculo == vehiculo.IdVehiculo);
+            var ordenes = await uow.OrdenesServicio.FindAsync(o => o.IdVehiculo == vehiculo.IdVehiculo && o.IdCliente == cliente.IdCliente);
             orden = ordenes.OrderByDescending(o => o.FechaIngreso).FirstOrDefault();
             if (orden is null)
                 return null;
@@ -237,34 +242,13 @@ public class OrdenServicioService(
     private async Task CargarRelacionesOrdenAsync(OrdenServicio orden)
     {
         orden.Vehiculo ??= await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo);
+        orden.Cliente ??= await uow.Clientes.GetByIdAsync(orden.IdCliente);
+        if (orden.Cliente?.Persona is null && orden.Cliente is not null)
+            orden.Cliente.Persona = await uow.Personas.GetByIdAsync(orden.Cliente.IdPersona);
         orden.TipoServicio ??= await uow.TiposServicio.GetByIdAsync(orden.IdTipoServicio);
         orden.Mecanico ??= await uow.Usuarios.GetByIdAsync(orden.IdMecanico);
         if (orden.Mecanico?.Persona is null && orden.Mecanico is not null)
             orden.Mecanico.Persona = await uow.Personas.GetByIdAsync(orden.Mecanico.IdPersona);
         await CargarEstadoOrdenAsync(orden);
-    }
-
-    private async Task<string> ObtenerNombreClienteVehiculoAsync(int idVehiculo)
-    {
-        var historiales = await uow.HistorialPropietarios.FindAsync(h =>
-            h.IdVehiculo == idVehiculo && h.FechaFin == null);
-        var historial = historiales.FirstOrDefault();
-        if (historial is null)
-            return string.Empty;
-
-        var cliente = await uow.Clientes.GetByIdAsync(historial.IdCliente);
-        if (cliente?.Persona is not null)
-            return $"{cliente.Persona.Nombres} {cliente.Persona.Apellidos}".Trim();
-
-        var persona = await uow.Personas.GetByIdAsync(
-            (await uow.Clientes.GetByIdAsync(historial.IdCliente))?.IdPersona ?? 0);
-        return persona == null ? string.Empty : $"{persona.Nombres} {persona.Apellidos}".Trim();
-    }
-
-    private async Task<bool> ClienteEsPropietarioVehiculoAsync(int idCliente, int idVehiculo)
-    {
-        var historiales = await uow.HistorialPropietarios.FindAsync(h =>
-            h.IdCliente == idCliente && h.IdVehiculo == idVehiculo && h.FechaFin == null);
-        return historiales.Any();
     }
 }

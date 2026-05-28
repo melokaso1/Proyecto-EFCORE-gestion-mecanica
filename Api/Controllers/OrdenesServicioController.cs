@@ -98,4 +98,48 @@ public class OrdenesServicioController(IOrdenServicioService ordenServicioServic
             return NotFound();
         }
     }
+
+    /// <summary>Marca una orden como entregada (requiere pago).</summary>
+    [HttpPatch("{id:int}/entregar")]
+    [Authorize(Roles = "Admin,Recepcionista")]
+    public async Task<IActionResult> Entregar(
+        int id,
+        [FromServices] ICajaService cajaService,
+        [FromServices] IUnitOfWork uow)
+    {
+        var orden = await uow.OrdenesServicio.GetByIdAsync(id);
+        if (orden is null)
+            return NotFound();
+
+        if (!await cajaService.OrdenEstaPagadaAsync(id))
+            return Conflict(new { message = "No se puede entregar el vehículo: la orden no está pagada." });
+
+        var estadoEntregado = (await uow.EstadosOrden.FindAsync(e => e.Nombre == Domain.Constants.EstadosOrden.Entregado)).FirstOrDefault();
+        if (estadoEntregado is null)
+            return Conflict(new { message = "Estado 'Entregado' no configurado." });
+
+        orden.IdEstadoOrden = estadoEntregado.IdEstadoOrden;
+        uow.OrdenesServicio.Update(orden);
+        await uow.CommitAsync();
+        return NoContent();
+    }
+
+    /// <summary>Cierra una orden (después de entrega).</summary>
+    [HttpPatch("{id:int}/cerrar")]
+    [Authorize(Roles = "Admin,Recepcionista")]
+    public async Task<IActionResult> Cerrar(int id, [FromServices] IUnitOfWork uow)
+    {
+        var orden = await uow.OrdenesServicio.GetByIdAsync(id);
+        if (orden is null)
+            return NotFound();
+
+        var estadoCerrado = (await uow.EstadosOrden.FindAsync(e => e.Nombre == Domain.Constants.EstadosOrden.Cerrado)).FirstOrDefault();
+        if (estadoCerrado is null)
+            return Conflict(new { message = "Estado 'Cerrado' no configurado." });
+
+        orden.IdEstadoOrden = estadoCerrado.IdEstadoOrden;
+        uow.OrdenesServicio.Update(orden);
+        await uow.CommitAsync();
+        return NoContent();
+    }
 }

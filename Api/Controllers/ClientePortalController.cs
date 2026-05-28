@@ -54,5 +54,29 @@ public class ClientePortalController(IClientePortalService portalService) : Cont
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>Lista las reparaciones de una orden propia del cliente.</summary>
+    [HttpGet("ordenes/{idOrdenServicio:int}/reparaciones")]
+    public async Task<ActionResult<IEnumerable<ReparacionItemDto>>> ListarReparaciones(int idOrdenServicio)
+    {
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+        if (!int.TryParse(idClaim, out var idUsuario))
+            return Unauthorized();
+
+        try
+        {
+            var items = await portalService.ListarReparacionesOrdenAsync(idUsuario, idOrdenServicio);
+            return Ok(items);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 

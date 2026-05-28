@@ -1,0 +1,136 @@
+@page "/caja"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin,Recepcionista")]
+@inject ICajaClientService CajaService
+
+<PageTitle>Caja — Pagos</PageTitle>
+
+<div class="max-w-3xl mx-auto space-y-6 pb-10">
+    <header class="border-b border-slate-200 pb-6">
+        <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Caja</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Registrar pago</h1>
+        <p class="text-sm text-slate-600 mt-2">Registra el pago y genera la factura de la orden.</p>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_success))
+    {
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">@_success</div>
+    }
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="text-xs font-semibold text-slate-600">Id Orden</label>
+                <input type="number"
+                       class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                       @bind="_form.IdOrdenServicio" />
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600">Método</label>
+                <select class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                        @bind="_form.Metodo">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="tarjeta">Tarjeta</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600">Monto</label>
+                <input type="number"
+                       class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                       @bind="_form.Monto" />
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-slate-600">Mano de obra (opcional)</label>
+                <input type="number"
+                       class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                       @bind="_form.ManoObra" />
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-xs font-semibold text-slate-600">Referencia</label>
+                <input class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                       @bind="_form.Referencia" />
+            </div>
+        </div>
+
+        <div class="pt-2">
+            <button class="px-5 py-2.5 rounded-xl text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                    disabled="@_saving"
+                    @onclick="RegistrarAsync">
+                Registrar pago
+            </button>
+        </div>
+    </section>
+
+    @if (_factura is not null)
+    {
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Factura #@_factura.IdFactura</h2>
+                    <p class="text-sm text-slate-600">Orden #@_factura.IdOrdenServicio — Total: @_factura.Total.ToString("C0")</p>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-xl border border-slate-200">
+                <table class="min-w-full text-sm bg-white">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-4 py-3">Concepto</th>
+                            <th class="px-4 py-3">Cant.</th>
+                            <th class="px-4 py-3">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var d in _factura.Detalles)
+                        {
+                            <tr>
+                                <td class="px-4 py-3 text-slate-900">@d.Concepto</td>
+                                <td class="px-4 py-3 text-slate-700">@d.Cantidad</td>
+                                <td class="px-4 py-3 text-slate-700">@d.PrecioUnitario.ToString("C0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private bool _saving;
+    private string? _error;
+    private string? _success;
+    private RegistrarPagoDto _form = new();
+    private FacturaDto? _factura;
+
+    private async Task RegistrarAsync()
+    {
+        if (_saving)
+            return;
+
+        _saving = true;
+        _error = null;
+        _success = null;
+        _factura = null;
+        try
+        {
+            var res = await CajaService.RegistrarPagoAsync(_form);
+            _factura = res.Factura;
+            _success = $"Pago registrado para la orden #{_form.IdOrdenServicio}.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo registrar el pago. {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}
+

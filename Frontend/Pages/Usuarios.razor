@@ -1,6 +1,6 @@
 @page "/usuarios"
 @layout MainLayout
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,Recepcionista")]
 @inject IUsuariosService UsuariosService
 @using System.Globalization
 
@@ -16,6 +16,11 @@
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            <button type="button"
+                    class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-800 shadow-sm transition hover:bg-red-100"
+                    @onclick="() => mostrarFormularioRegistro = !mostrarFormularioRegistro">
+                @(mostrarFormularioRegistro ? "Ocultar formulario" : "Registrar usuario")
+            </button>
             <a href="/admin"
                class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
                 Volver al panel
@@ -36,6 +41,60 @@
             </button>
         </div>
     </header>
+
+    @if (mostrarFormularioRegistro)
+    {
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 space-y-4">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Nuevo usuario</h2>
+                <p class="text-sm text-slate-600 mt-1">Solo admin y recepción pueden registrar cuentas. Asigna el rol después si lo dejas pendiente.</p>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(mensajeRegistroError))
+            {
+                <p class="text-sm text-red-700 rounded-xl bg-red-50 border border-red-100 px-4 py-3">@mensajeRegistroError</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(mensajeRegistroExito))
+            {
+                <p class="text-sm text-emerald-800 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">@mensajeRegistroExito</p>
+            }
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Nombres</label>
+                    <input type="text" @bind="nuevoUsuario.Nombres"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Apellidos</label>
+                    <input type="text" @bind="nuevoUsuario.Apellidos"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Correo</label>
+                    <input type="email" @bind="nuevoUsuario.Correo" placeholder="usuario@dominio.com"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Contraseña</label>
+                    <input type="password" @bind="nuevoUsuario.Password"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+                </div>
+            </div>
+            <button type="button"
+                    disabled="@registrandoUsuario"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+                    @onclick="RegistrarUsuarioAsync">
+                @if (registrandoUsuario)
+                {
+                    <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                    <span>Registrando...</span>
+                }
+                else
+                {
+                    <span>Crear cuenta</span>
+                }
+            </button>
+        </section>
+    }
 
     @if (!cargando && string.IsNullOrWhiteSpace(mensajeError))
     {
@@ -215,7 +274,12 @@
 @code {
     private List<UsuarioDto> usuarios = [];
     private readonly Dictionary<int, int> rolesSeleccionados = [];
+    private readonly RegisterUserDto nuevoUsuario = new();
     private bool cargando = true;
+    private bool mostrarFormularioRegistro;
+    private bool registrandoUsuario;
+    private string? mensajeRegistroError;
+    private string? mensajeRegistroExito;
     private int? asignandoId;
     private string? mensajeExito;
     private string? mensajeError;
@@ -280,6 +344,49 @@
         finally
         {
             cargando = false;
+        }
+    }
+
+    private async Task RegistrarUsuarioAsync()
+    {
+        mensajeRegistroError = null;
+        mensajeRegistroExito = null;
+
+        if (string.IsNullOrWhiteSpace(nuevoUsuario.Nombres)
+            || string.IsNullOrWhiteSpace(nuevoUsuario.Apellidos)
+            || string.IsNullOrWhiteSpace(nuevoUsuario.Correo)
+            || string.IsNullOrWhiteSpace(nuevoUsuario.Password))
+        {
+            mensajeRegistroError = "Completa todos los campos.";
+            return;
+        }
+
+        if (nuevoUsuario.Password.Length < 6)
+        {
+            mensajeRegistroError = "La contraseña debe tener al menos 6 caracteres.";
+            return;
+        }
+
+        registrandoUsuario = true;
+        try
+        {
+            var (success, error) = await UsuariosService.RegisterUsuarioAsync(nuevoUsuario);
+            if (!success)
+            {
+                mensajeRegistroError = error;
+                return;
+            }
+
+            mensajeRegistroExito = "Usuario registrado. Asigna su rol en la tabla.";
+            nuevoUsuario.Nombres = string.Empty;
+            nuevoUsuario.Apellidos = string.Empty;
+            nuevoUsuario.Correo = string.Empty;
+            nuevoUsuario.Password = string.Empty;
+            await CargarUsuariosAsync();
+        }
+        finally
+        {
+            registrandoUsuario = false;
         }
     }
 

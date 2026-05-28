@@ -11,5 +11,7 @@ public interface IClientePortalService
         string? estado);
 
     Task DecidirCostoAsync(int idUsuario, int idOrdenServicio, ClienteDecisionCostoDto dto);
+
+    Task<IReadOnlyList<ReparacionItemDto>> ListarReparacionesOrdenAsync(int idUsuario, int idOrdenServicio);
 }
 

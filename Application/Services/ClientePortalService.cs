@@ -5,7 +5,7 @@ using Domain.Entities;
 
 namespace Application.Services;
 
-public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaService) : IClientePortalService
+public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaService, IDiagnosticoService diagnosticoService) : IClientePortalService
 {
     public async Task<PagedResultDto<ClientePortalOrdenDto>> ListarMisOrdenesAsync(
         int idUsuario,
@@ -21,10 +21,6 @@ public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaServic
         var dtos = new List<ClientePortalOrdenDto>();
         foreach (var orden in items)
         {
-            // seguridad extra: GetPagedConFiltrosAsync filtra por historial, pero validamos que exista propietario actual
-            if (!await ClienteEsPropietarioActualVehiculoAsync(cliente.IdCliente, orden.IdVehiculo))
-                continue;
-
             var vehiculo = orden.Vehiculo ?? await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo);
             if (vehiculo?.Modelo is null)
                 vehiculo = await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo);
@@ -80,7 +76,7 @@ public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaServic
         var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
             ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
 
-        if (!await ClienteEsPropietarioActualVehiculoAsync(cliente.IdCliente, orden.IdVehiculo))
+        if (orden.IdCliente != cliente.IdCliente)
             throw new BusinessRuleException("No tienes acceso a esa orden.");
 
         if (orden.CostoPropuesto is null)
@@ -96,6 +92,19 @@ public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaServic
         await uow.CommitAsync();
     }
 
+    public async Task<IReadOnlyList<ReparacionItemDto>> ListarReparacionesOrdenAsync(int idUsuario, int idOrdenServicio)
+    {
+        var cliente = await ObtenerClientePorUsuarioAsync(idUsuario);
+
+        var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
+            ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
+
+        if (orden.IdCliente != cliente.IdCliente)
+            throw new BusinessRuleException("No tienes acceso a esa orden.");
+
+        return await diagnosticoService.ListarReparacionesAsync(idOrdenServicio);
+    }
+
     private async Task<Cliente> ObtenerClientePorUsuarioAsync(int idUsuario)
     {
         var usuario = await uow.Usuarios.GetByIdAsync(idUsuario)
@@ -109,11 +118,5 @@ public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaServic
         return cliente;
     }
 
-    private async Task<bool> ClienteEsPropietarioActualVehiculoAsync(int idCliente, int idVehiculo)
-    {
-        var historiales = await uow.HistorialPropietarios.FindAsync(h =>
-            h.IdCliente == idCliente && h.IdVehiculo == idVehiculo && h.FechaFin == null);
-        return historiales.Any();
-    }
 }
 
