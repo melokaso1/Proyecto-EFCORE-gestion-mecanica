@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- Avoid spawning a console window when Api.exe is started from the Desktop (WPF/WebView2) host in Release/publish. -->
+    <OutputType Condition="'$(Configuration)' == 'Release'">WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>

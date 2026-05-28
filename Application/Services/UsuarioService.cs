@@ -11,8 +11,36 @@ public class UsuarioService(
     IMapper mapper,
     ITokenGenerator tokenGenerator) : IUsuarioService
 {
-    public async Task<UsuarioDto> CrearAsync(CreateUsuarioDto dto)
+    public async Task<UsuarioDto> CrearAsync(CreateUsuarioDto dto) =>
+        await CrearUsuarioInternoAsync(dto);
+
+    public async Task<UsuarioDto> RegistrarAdminAsync(CreateUsuarioDto dto, bool invocadoPorAdmin)
     {
+        if (!invocadoPorAdmin && await uow.Usuarios.ExisteConRolAsync("Admin"))
+            throw new BusinessRuleException(
+                "Ya existe un administrador en el sistema. Solicita acceso al admin del taller o inicia sesión como administrador para registrar otro.");
+
+        dto.IdRol = 1;
+        return await CrearUsuarioInternoAsync(dto);
+    }
+
+    public async Task<UsuarioDto> RegistrarUsuarioAsync(RegistroUsuarioDto dto) =>
+        await CrearUsuarioInternoAsync(new CreateUsuarioDto
+        {
+            Nombres = dto.Nombres,
+            Apellidos = dto.Apellidos,
+            Correo = dto.Correo,
+            Password = dto.Password
+        }, asignarRol: false);
+
+    public Task<bool> ExisteAdminAsync() =>
+        uow.Usuarios.ExisteConRolAsync("Admin");
+
+    private async Task<UsuarioDto> CrearUsuarioInternoAsync(CreateUsuarioDto dto, bool asignarRol = true)
+    {
+        if (await BuscarUsuarioPorCorreoAsync(dto.Correo) is not null)
+            throw new ConflictException("Ya existe un usuario registrado con ese correo.");
+
         var persona = new Persona
         {
             Nombres = dto.Nombres,
@@ -34,8 +62,16 @@ public class UsuarioService(
             EsPrincipal = true
         });
 
-        var rol = await uow.Roles.GetByIdAsync(dto.IdRol)
-            ?? throw new NotFoundException($"Rol {dto.IdRol} no encontrado.");
+        List<Rol> roles = [];
+        if (asignarRol)
+        {
+            if (dto.IdRol <= 0)
+                throw new BusinessRuleException("Debe especificarse un rol.");
+
+            var rol = await uow.Roles.GetByIdAsync(dto.IdRol)
+                ?? throw new NotFoundException($"Rol {dto.IdRol} no encontrado.");
+            roles.Add(rol);
+        }
 
         var usuario = new Usuario
         {
@@ -43,7 +79,7 @@ public class UsuarioService(
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Estado = true,
             Persona = persona,
-            Roles = [rol]
+            Roles = roles
         };
 
         await uow.Usuarios.AddAsync(usuario);
@@ -62,6 +98,11 @@ public class UsuarioService(
             throw new NotFoundException("Credenciales inválidas.");
 
         await CargarUsuarioAsync(usuario);
+
+        if (usuario.Roles.Count == 0)
+            throw new BusinessRuleException(
+                "Tu cuenta está pendiente de aprobación. El administrador debe asignarte un rol antes de ingresar.");
+
         return tokenGenerator.Generate(usuario, dto.Correo);
     }
 
@@ -84,16 +125,36 @@ public class UsuarioService(
         };
     }
 
+    public async Task<PagedResultDto<UsuarioDto>> ListarEmpleadosAsync(int page, int size)
+    {
+        var (items, total) = await uow.Usuarios.GetEmpleadosPagedAsync(page, size);
+        var dtos = items.Select(u => mapper.Map<UsuarioDto>(u)).ToList();
+
+        return new PagedResultDto<UsuarioDto>
+        {
+            Items = dtos,
+            TotalCount = total,
+            PageNumber = page,
+            PageSize = size
+        };
+    }
+
     public async Task AsignarRolAsync(int idUsuario, int idRol)
     {
         var usuario = await uow.Usuarios.GetByIdAsync(idUsuario)
             ?? throw new NotFoundException($"Usuario {idUsuario} no encontrado.");
 
+        if (usuario.Roles.Any(r => r.NombreRol == "Admin"))
+            throw new BusinessRuleException("No puedes modificar el rol de un administrador.");
+
         var rol = await uow.Roles.GetByIdAsync(idRol)
             ?? throw new NotFoundException($"Rol {idRol} no encontrado.");
 
-        if (usuario.Roles.All(r => r.IdRol != idRol))
-            usuario.Roles.Add(rol);
+        if (rol.NombreRol is not ("Mecánico" or "Recepcionista"))
+            throw new BusinessRuleException("Solo se pueden asignar roles de Mecánico o Recepcionista.");
+
+        usuario.Roles.Clear();
+        usuario.Roles.Add(rol);
 
         uow.Usuarios.Update(usuario);
         await uow.CommitAsync();
@@ -128,7 +189,13 @@ public class UsuarioService(
 
     private async Task CargarUsuarioAsync(Usuario usuario)
     {
-        usuario.Persona ??= await uow.Personas.GetByIdAsync(usuario.IdPersona);
+        var completo = await uow.Usuarios.GetByIdAsync(usuario.IdUsuario);
+        if (completo is null)
+            return;
+
+        usuario.Persona = completo.Persona;
+        usuario.Roles = completo.Roles;
+
         if (usuario.Persona is not null)
         {
             usuario.Persona.CorreosPersona = (await uow.CorreosPersona

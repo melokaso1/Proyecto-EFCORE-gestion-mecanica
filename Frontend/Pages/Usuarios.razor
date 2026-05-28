@@ -1,0 +1,329 @@
+@page "/usuarios"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IUsuariosService UsuariosService
+@using System.Globalization
+
+<PageTitle>Usuarios — Mecánicas Jholversito</PageTitle>
+
+<div class="max-w-6xl mx-auto space-y-8 pb-8">
+    <header class="flex flex-col gap-4 border-b border-slate-200 pb-8 lg:flex-row lg:items-end lg:justify-between">
+        <div class="space-y-2">
+            <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Administración</p>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Usuarios y roles</h1>
+            <p class="max-w-2xl text-sm leading-relaxed text-slate-600">
+                Asigna o cambia el rol del personal. Los usuarios sin rol no pueden acceder al sistema hasta que completes la asignación.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="/admin"
+               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                Volver al panel
+            </a>
+            <button type="button"
+                    disabled="@cargando"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    @onclick="CargarUsuariosAsync">
+                @if (cargando)
+                {
+                    <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                    <span>Actualizando</span>
+                }
+                else
+                {
+                    <span>Refrescar lista</span>
+                }
+            </button>
+        </div>
+    </header>
+
+    @if (!cargando && string.IsNullOrWhiteSpace(mensajeError))
+    {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total en sistema</p>
+                <p class="mt-2 text-3xl font-bold tabular-nums text-slate-900">@totalUsuarios</p>
+            </div>
+            <div class="rounded-2xl border border-red-200 bg-red-50/80 p-5 shadow-sm ring-1 ring-red-900/5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-red-800">Sin rol asignado</p>
+                <p class="mt-2 text-3xl font-bold tabular-nums text-red-900">@pendientesSinRol</p>
+                <p class="mt-1 text-xs text-red-700">Requieren acción</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/80 bg-slate-50 p-5 shadow-sm ring-1 ring-slate-900/5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Coinciden filtro</p>
+                <p class="mt-2 text-3xl font-bold tabular-nums text-slate-900">@UsuariosVisibles.Count()</p>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(mensajeExito))
+    {
+        <div class="flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm" role="status">
+            <p class="text-sm font-medium text-emerald-900">@mensajeExito</p>
+            <button type="button"
+                    class="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                    @onclick="() => mensajeExito = null">
+                Cerrar
+            </button>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(mensajeError))
+    {
+        <div class="flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm" role="alert">
+            <p class="text-sm font-medium text-red-900">@mensajeError</p>
+            <button type="button"
+                    class="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-100"
+                    @onclick="() => mensajeError = null">
+                Cerrar
+            </button>
+        </div>
+    }
+
+    @if (!cargando && string.IsNullOrWhiteSpace(mensajeError))
+    {
+        <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+            <div class="min-w-0 flex-1 sm:max-w-md">
+                <label for="filtro-usuarios" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Buscar</label>
+                <input id="filtro-usuarios"
+                       type="search"
+                       @bind="filtroTexto"
+                       @bind:event="oninput"
+                       placeholder="Nombre o correo"
+                       class="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-inner focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+            </div>
+            <label class="inline-flex cursor-pointer select-none items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-red-200 hover:bg-red-50/50">
+                <input type="checkbox"
+                       class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                       @bind="soloPendientes" />
+                Solo pendientes de rol
+            </label>
+        </div>
+    }
+
+    @if (cargando)
+    {
+        <div class="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="h-4 w-1/3 animate-pulse rounded bg-slate-200"></div>
+            @for (var i = 0; i < 6; i++)
+            {
+                <div class="h-12 animate-pulse rounded-lg bg-slate-100"></div>
+            }
+        </div>
+    }
+    else if (string.IsNullOrWhiteSpace(mensajeError))
+    {
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5">
+            <div class="max-h-[min(32rem,calc(100vh-12rem))] overflow-auto">
+                <table class="min-w-full border-collapse text-left text-sm">
+                    <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-100/95 backdrop-blur-sm">
+                        <tr>
+                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Usuario</th>
+                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Correo</th>
+                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Rol</th>
+                            <th scope="col" class="min-w-[14rem] whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @if (!UsuariosVisibles.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="px-4 py-16 text-center">
+                                    <p class="text-sm font-medium text-slate-700">No hay resultados</p>
+                                    <p class="mt-1 text-xs text-slate-500">Prueba otro criterio de búsqueda o desactiva el filtro de pendientes.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var usuario in UsuariosVisibles)
+                            {
+                                var esAdmin = usuario.Roles.Contains("Admin");
+                                var sinRol = usuario.Roles.Count == 0;
+                                <tr @key="usuario.IdUsuario" class="@(sinRol ? "bg-red-50/40" : "hover:bg-slate-50/80") transition-colors">
+                                    <td class="px-4 py-3.5 align-middle">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="font-medium text-slate-900">@usuario.NombreCompleto</span>
+                                            @if (sinRol)
+                                            {
+                                                <span class="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-200">Pendiente</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3.5 align-middle">
+                                        <span class="font-mono text-xs text-slate-600 sm:text-sm">@usuario.Correo</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 align-middle">
+                                        @if (esAdmin)
+                                        {
+                                            <span class="inline-flex rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-white">Admin</span>
+                                        }
+                                        else if (sinRol)
+                                        {
+                                            <span class="text-xs font-medium italic text-red-600">Sin rol</span>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var r in usuario.Roles)
+                                            {
+                                                <span class="@RolBadgeClass(r) mr-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold">@r</span>
+                                            }
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3.5 align-middle">
+                                        @if (esAdmin)
+                                        {
+                                            <span class="text-xs text-slate-400">No editable</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                                <select class="min-w-[10.5rem] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25"
+                                                        value="@rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario)"
+                                                        @onchange="(e) => OnRolSeleccionadoChanged(usuario.IdUsuario, e)">
+                                                    <option value="0">Seleccionar rol</option>
+                                                    <option value="2">Mecánico</option>
+                                                    <option value="3">Recepcionista</option>
+                                                </select>
+                                                <button type="button"
+                                                        disabled="@(asignandoId == usuario.IdUsuario || rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario) is not (2 or 3))"
+                                                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45"
+                                                        @onclick="() => AsignarRolAsync(usuario.IdUsuario)">
+                                                    @if (asignandoId == usuario.IdUsuario)
+                                                    {
+                                                        <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                                                        <span>Guardando</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@(sinRol ? "Asignar rol" : "Guardar cambio")</span>
+                                                    }
+                                                </button>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<UsuarioDto> usuarios = [];
+    private readonly Dictionary<int, int> rolesSeleccionados = [];
+    private bool cargando = true;
+    private int? asignandoId;
+    private string? mensajeExito;
+    private string? mensajeError;
+    private int totalUsuarios;
+    private int pendientesSinRol;
+    private string filtroTexto = string.Empty;
+    private bool soloPendientes;
+
+    private IEnumerable<UsuarioDto> UsuariosVisibles =>
+        usuarios.Where(u =>
+        {
+            if (soloPendientes && u.Roles.Count > 0)
+                return false;
+
+            var q = filtroTexto.Trim();
+            if (string.IsNullOrEmpty(q))
+                return true;
+
+            return (u.NombreCompleto?.Contains(q, StringComparison.OrdinalIgnoreCase) == true)
+                   || (u.Correo?.Contains(q, StringComparison.OrdinalIgnoreCase) == true);
+        });
+
+    private static string RolBadgeClass(string rol) => rol switch
+    {
+        "Mecánico" => "bg-red-100 text-red-900 ring-1 ring-inset ring-red-200",
+        "Recepcionista" => "bg-slate-100 text-slate-800 ring-1 ring-inset ring-slate-200",
+        _ => "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarUsuariosAsync();
+    }
+
+    private async Task CargarUsuariosAsync()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            var result = await UsuariosService.GetUsuariosAsync(1, 500);
+            usuarios = result.Items;
+            totalUsuarios = result.TotalCount;
+            pendientesSinRol = usuarios.Count(u => u.Roles.Count == 0);
+
+            rolesSeleccionados.Clear();
+            foreach (var u in usuarios)
+            {
+                var rolActual = u.Roles.FirstOrDefault() switch
+                {
+                    "Mecánico" => 2,
+                    "Recepcionista" => 3,
+                    _ => 0
+                };
+                rolesSeleccionados[u.IdUsuario] = rolActual;
+            }
+        }
+        catch
+        {
+            mensajeError = "No se pudo cargar la lista de usuarios.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task AsignarRolAsync(int idUsuario)
+    {
+        mensajeExito = null;
+        mensajeError = null;
+
+        if (!rolesSeleccionados.TryGetValue(idUsuario, out var idRol) || idRol is not (2 or 3))
+        {
+            mensajeError = "Selecciona un rol válido en la lista.";
+            return;
+        }
+
+        asignandoId = idUsuario;
+        try
+        {
+            var (success, error) = await UsuariosService.AsignarRolAsync(idUsuario, idRol);
+            if (!success)
+            {
+                mensajeError = error;
+                return;
+            }
+
+            mensajeExito = "Rol guardado correctamente.";
+            await CargarUsuariosAsync();
+        }
+        finally
+        {
+            asignandoId = null;
+        }
+    }
+
+    private void OnRolSeleccionadoChanged(int idUsuario, ChangeEventArgs e)
+    {
+        if (e.Value is null)
+        {
+            rolesSeleccionados[idUsuario] = 0;
+            return;
+        }
+
+        if (int.TryParse(Convert.ToString(e.Value, CultureInfo.InvariantCulture), NumberStyles.Integer, CultureInfo.InvariantCulture, out var idRol))
+        {
+            rolesSeleccionados[idUsuario] = idRol;
+        }
+    }
+}

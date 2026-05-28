@@ -56,6 +56,7 @@ public class OrdenServicioRepository(AutoTallerDbContext context)
 
         var total = await query.CountAsync();
         var items = await query
+            .OrderByDescending(o => o.FechaIngreso)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

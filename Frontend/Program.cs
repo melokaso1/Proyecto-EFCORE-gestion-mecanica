@@ -1,11 +1,47 @@
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Frontend;
+using Frontend.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
+var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+// In "Production" while running from source (dotnet run --no-launch-profile),
+// Static Web Assets may not be enabled by default, which breaks Blazor Server
+// script loading (/_framework/blazor.server.js). Enabling it here keeps the app
+// runnable regardless of launch profile.
+builder.WebHost.UseStaticWebAssets();
 
-await builder.Build().RunAsync();
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5043";
+
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+builder.Services.AddAuthorizationCore();
+
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
+builder.Services.AddScoped<IUsuariosService, UsuariosService>();
+builder.Services.AddScoped<IClientesService, ClientesService>();
+builder.Services.AddScoped<IVehiculosService, VehiculosService>();
+builder.Services.AddScoped<IOrdenesService, OrdenesService>();
+builder.Services.AddScoped<ISeguimientoService, SeguimientoService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IEmpleadosService, EmpleadosService>();
+builder.Services.AddScoped<IClientePortalService, ClientePortalService>();
+
+builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
+
+app.Run();

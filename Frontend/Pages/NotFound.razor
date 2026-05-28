@@ -1,5 +1,14 @@
-﻿@page "/not-found"
-@layout MainLayout
+@page "/not-found"
+@layout AuthLayout
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<div class="flex min-h-screen items-center justify-center p-6">
+    <div class="text-center">
+        <p class="text-5xl font-bold text-red-600 mb-4">404</p>
+        <h1 class="text-2xl font-bold text-slate-800">Página no encontrada</h1>
+        <p class="text-slate-500 mt-2 mb-6">La ruta que buscas no existe.</p>
+        <a href="/"
+           class="inline-flex px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors">
+            Volver al inicio
+        </a>
+    </div>
+</div>

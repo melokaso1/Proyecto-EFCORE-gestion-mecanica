@@ -1,0 +1,135 @@
+@page "/mecanico"
+@layout MainLayout
+@attribute [Authorize(Roles = "Mecánico")]
+@inject IOrdenesService OrdenesService
+
+<PageTitle>Mis órdenes — Mecánicas Jholversito</PageTitle>
+
+<div class="max-w-6xl mx-auto space-y-8 pb-8">
+    <header class="border-b border-slate-200 pb-6">
+        <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Área de trabajo</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Mis órdenes asignadas</h1>
+        <p class="text-sm text-slate-600 mt-2">Órdenes de servicio bajo tu responsabilidad.</p>
+    </header>
+
+    <div class="flex flex-wrap gap-2">
+        @foreach (var filtro in filtrosEstado)
+        {
+            <button type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium transition @(filtroActivo == filtro ? "bg-red-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-red-50 hover:text-red-700")"
+                    @onclick="() => CambiarFiltroAsync(filtro)">
+                @(filtro ?? "Todas")
+            </button>
+        }
+    </div>
+
+    @if (cargando)
+    {
+        <div class="space-y-3">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="h-16 animate-pulse rounded-xl bg-slate-200/80"></div>
+            }
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@error</div>
+    }
+    else if (ordenes.Count == 0)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center">
+            <p class="text-slate-600">No tienes órdenes asignadas@(filtroActivo is null ? "." : $" en estado «{filtroActivo}».")</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-5 py-3">Orden</th>
+                            <th class="px-5 py-3">Cliente</th>
+                            <th class="px-5 py-3">Vehículo</th>
+                            <th class="px-5 py-3">Servicio</th>
+                            <th class="px-5 py-3">Estado</th>
+                            <th class="px-5 py-3">Ingreso</th>
+                            <th class="px-5 py-3">Entrega est.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var orden in ordenes)
+                        {
+                            <tr class="hover:bg-slate-50/80">
+                                <td class="px-5 py-4 font-medium text-slate-900">#@orden.IdOrdenServicio</td>
+                                <td class="px-5 py-4 text-slate-700">@orden.ClienteNombre</td>
+                                <td class="px-5 py-4">
+                                    <p class="font-medium text-slate-800">@orden.MarcaModelo</p>
+                                    <p class="text-xs text-slate-500 font-mono">@orden.VIN</p>
+                                </td>
+                                <td class="px-5 py-4 text-slate-700">@orden.TipoServicio</td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold @EstadoClase(orden.Estado)">
+                                        @orden.Estado
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-slate-600">@orden.FechaIngreso.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                <td class="px-5 py-4 text-slate-600">
+                                    @(orden.FechaEstimadaEntrega?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="text-xs text-slate-500">@ordenes.Count de @totalCount órdenes</p>
+    }
+</div>
+
+@code {
+    private bool cargando = true;
+    private string? error;
+    private List<OrdenServicioDto> ordenes = [];
+    private int totalCount;
+    private string? filtroActivo;
+    private readonly string?[] filtrosEstado = [null, "Pendiente", "En Proceso", "Completada"];
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CambiarFiltroAsync(string? filtro)
+    {
+        filtroActivo = filtro;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            var result = await OrdenesService.GetMisOrdenesAsync(1, 50, filtroActivo);
+            ordenes = result.Items;
+            totalCount = result.TotalCount;
+        }
+        catch
+        {
+            error = "No se pudieron cargar tus órdenes. Comprueba que la API esté en ejecución.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private static string EstadoClase(string estado) => estado switch
+    {
+        "Pendiente" => "bg-amber-100 text-amber-800",
+        "En Proceso" => "bg-blue-100 text-blue-800",
+        "Completada" => "bg-emerald-100 text-emerald-800",
+        "Cancelada" => "bg-slate-100 text-slate-600",
+        _ => "bg-slate-100 text-slate-700"
+    };
+}

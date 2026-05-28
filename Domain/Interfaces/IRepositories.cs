@@ -39,6 +39,10 @@ public interface IDetalleOrdenRepository : IGenericRepository<DetalleOrdenRepues
 
 public interface IFacturaRepository : IGenericRepository<Factura>;
 
-public interface IUsuarioRepository : IGenericRepository<Usuario>;
+public interface IUsuarioRepository : IGenericRepository<Usuario>
+{
+    Task<bool> ExisteConRolAsync(string nombreRol);
+    Task<(IEnumerable<Usuario> items, int total)> GetEmpleadosPagedAsync(int pageNumber, int pageSize);
+}
 
 public interface IAuditoriaRepository : IGenericRepository<Auditoria>;

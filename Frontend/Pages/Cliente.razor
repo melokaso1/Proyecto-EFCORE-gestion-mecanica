@@ -1,0 +1,186 @@
+@page "/cliente"
+@using Frontend.Models
+@inject IClientePortalService Portal
+@inject NavigationManager Nav
+
+<AuthorizeView Roles="Cliente">
+    <Authorized>
+        <div class="space-y-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Mi taller</h1>
+                    <p class="text-sm text-slate-500">Consulta el estado de tus vehículos y aprueba costos propuestos.</p>
+                </div>
+                <button class="px-4 py-2 rounded-lg text-sm bg-white border border-slate-200 hover:bg-slate-50"
+                        @onclick="RecargarAsync">
+                    Actualizar
+                </button>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="p-6 bg-white rounded-xl border border-slate-200 text-slate-600">
+                    Cargando órdenes...
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="p-6 bg-white rounded-xl border border-rose-200 text-rose-700">
+                    @_error
+                </div>
+            }
+            else if (_ordenes.Count == 0)
+            {
+                <div class="p-6 bg-white rounded-xl border border-slate-200 text-slate-600">
+                    No tienes órdenes registradas todavía.
+                </div>
+            }
+            else
+            {
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    @foreach (var o in _ordenes)
+                    {
+                        <div class="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900 truncate">@o.MarcaModelo (@o.Anio)</p>
+                                    <p class="text-xs text-slate-500 truncate">VIN: @o.VIN</p>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100">
+                                    @o.Estado
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="text-xs text-slate-500">Servicio</p>
+                                    <p class="text-slate-800">@o.TipoServicio</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500">Ingreso</p>
+                                    <p class="text-slate-800">@o.FechaIngreso.ToLocalTime().ToString("yyyy-MM-dd")</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500">Entrega estimada</p>
+                                    <p class="text-slate-800">@((o.FechaEstimadaEntrega?.ToLocalTime().ToString("yyyy-MM-dd")) ?? "—")</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500">Total factura</p>
+                                    <p class="text-slate-800">@((o.TotalFactura is null) ? "—" : o.TotalFactura.Value.ToString("C0"))</p>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-100">
+                                <p class="text-xs text-slate-500 mb-1">Trabajo / notas</p>
+                                <p class="text-sm text-slate-800">@((string.IsNullOrWhiteSpace(o.TrabajoRealizado)) ? "—" : o.TrabajoRealizado)</p>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-100 space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs text-slate-500">Costo propuesto</p>
+                                        <p class="text-sm font-semibold text-slate-900">
+                                            @((o.CostoPropuesto is null) ? "—" : o.CostoPropuesto.Value.ToString("C0"))
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-slate-500">Aprobación</p>
+                                        <p class="text-sm text-slate-800">@GetAprobacionTexto(o)</p>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(o.NotaCostoPropuesto))
+                                {
+                                    <p class="text-xs text-slate-600">Nota: @o.NotaCostoPropuesto</p>
+                                }
+
+                                @if (o.CostoPropuesto is not null && o.CostoAprobado is null)
+                                {
+                                    <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                                        <button class="px-4 py-2 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                                                disabled="@_saving"
+                                                @onclick="() => DecidirAsync(o.IdOrdenServicio, true)">
+                                            Aceptar
+                                        </button>
+                                        <button class="px-4 py-2 rounded-lg text-sm bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                                                disabled="@_saving"
+                                                @onclick="() => DecidirAsync(o.IdOrdenServicio, false)">
+                                            Rechazar
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="p-6 bg-white rounded-xl border border-slate-200">
+            <p class="text-slate-700">No tienes acceso a esta vista.</p>
+            <button class="mt-4 px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700"
+                    @onclick="GoLogin">
+                Ir a login
+            </button>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private List<ClientePortalOrden> _ordenes = [];
+
+    protected override async Task OnInitializedAsync() => await RecargarAsync();
+
+    private async Task RecargarAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var result = await Portal.GetMisOrdenesAsync(page: 1, size: 50);
+            _ordenes = result.Items;
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudieron cargar tus órdenes. {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task DecidirAsync(int idOrdenServicio, bool aprobado)
+    {
+        if (_saving)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            await Portal.DecidirCostoAsync(idOrdenServicio, aprobado, comentario: null);
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo enviar la decisión. {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static string GetAprobacionTexto(ClientePortalOrden o) =>
+        o.CostoPropuesto is null ? "Sin propuesta" :
+        o.CostoAprobado is null ? "Pendiente" :
+        o.CostoAprobado.Value ? "Aceptado" : "Rechazado";
+
+    private void GoLogin() => Nav.NavigateTo("/login", replace: true);
+}
+

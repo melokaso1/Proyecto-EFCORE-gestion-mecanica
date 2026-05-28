@@ -412,12 +412,17 @@ namespace Infrastructure.Migrations
                     b.Property<int>("IdMarca")
                         .HasColumnType("integer");
 
+                    b.Property<int>("IdTipoVehiculo")
+                        .HasColumnType("integer");
+
                     b.Property<string>("NombreModelo")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)");
 
                     b.HasKey("IdModelo");
+
+                    b.HasIndex("IdTipoVehiculo");
 
                     b.HasIndex("IdMarca", "NombreModelo")
                         .IsUnique();
@@ -432,6 +437,18 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdOrdenServicio"));
+
+                    b.Property<string>("ComentarioCliente")
+                        .HasColumnType("text");
+
+                    b.Property<bool?>("CostoAprobado")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("CostoPropuesto")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("FechaDecisionCosto")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FechaEstimadaEntrega")
                         .HasColumnType("timestamp with time zone");
@@ -450,6 +467,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("IdVehiculo")
                         .HasColumnType("integer");
+
+                    b.Property<string>("NotaCostoPropuesto")
+                        .HasColumnType("text");
 
                     b.Property<string>("TrabajoRealizado")
                         .HasColumnType("text");
@@ -576,6 +596,11 @@ namespace Infrastructure.Migrations
                         {
                             IdRol = 3,
                             NombreRol = "Recepcionista"
+                        },
+                        new
+                        {
+                            IdRol = 4,
+                            NombreRol = "Cliente"
                         });
                 });
 
@@ -699,6 +724,59 @@ namespace Infrastructure.Migrations
                     b.ToTable("TiposServicio", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.TipoVehiculo", b =>
+                {
+                    b.Property<int>("IdTipoVehiculo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdTipoVehiculo"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("IdTipoVehiculo");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
+
+                    b.ToTable("TiposVehiculo", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            IdTipoVehiculo = 1,
+                            Nombre = "Sedán"
+                        },
+                        new
+                        {
+                            IdTipoVehiculo = 2,
+                            Nombre = "Hatchback"
+                        },
+                        new
+                        {
+                            IdTipoVehiculo = 3,
+                            Nombre = "SUV"
+                        },
+                        new
+                        {
+                            IdTipoVehiculo = 4,
+                            Nombre = "Camioneta"
+                        },
+                        new
+                        {
+                            IdTipoVehiculo = 5,
+                            Nombre = "Pickup"
+                        },
+                        new
+                        {
+                            IdTipoVehiculo = 6,
+                            Nombre = "Motocicleta"
+                        });
+                });
+
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("IdUsuario")
@@ -801,7 +879,7 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.CorreoPersona", b =>
                 {
-                    b.HasOne("Domain.Entities.DominioCorreo", null)
+                    b.HasOne("Domain.Entities.DominioCorreo", "DominioCorreo")
                         .WithMany()
                         .HasForeignKey("IdDominioCorreo")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -812,6 +890,8 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("IdPersona")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("DominioCorreo");
                 });
 
             modelBuilder.Entity("Domain.Entities.DetalleFactura", b =>
@@ -885,7 +965,15 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.TipoVehiculo", "TipoVehiculo")
+                        .WithMany()
+                        .HasForeignKey("IdTipoVehiculo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Marca");
+
+                    b.Navigation("TipoVehiculo");
                 });
 
             modelBuilder.Entity("Domain.Entities.OrdenServicio", b =>
@@ -936,17 +1024,19 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.TelefonoPersona", b =>
                 {
-                    b.HasOne("Domain.Entities.CodigoTelefono", null)
+                    b.HasOne("Domain.Entities.CodigoTelefono", "CodigoTelefono")
                         .WithMany()
                         .HasForeignKey("IdCodigoTelefono")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Persona", null)
-                        .WithMany()
+                        .WithMany("TelefonosPersona")
                         .HasForeignKey("IdPersona")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("CodigoTelefono");
                 });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
@@ -994,6 +1084,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Persona", b =>
                 {
                     b.Navigation("CorreosPersona");
+
+                    b.Navigation("TelefonosPersona");
                 });
 #pragma warning restore 612, 618
         }

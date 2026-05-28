@@ -10,7 +10,8 @@ public class VehiculoMappingConfig : IRegister
     {
         config.NewConfig<Vehiculo, VehiculoDto>()
             .Map(dest => dest.Marca, src => src.Modelo!.Marca!.NombreMarca)
-            .Map(dest => dest.Modelo, src => src.Modelo!.NombreModelo);
+            .Map(dest => dest.Modelo, src => src.Modelo!.NombreModelo)
+            .Map(dest => dest.TipoVehiculo, src => src.Modelo!.TipoVehiculo!.Nombre);
 
         config.NewConfig<CreateVehiculoDto, Vehiculo>();
     }

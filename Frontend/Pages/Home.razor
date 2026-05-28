@@ -1,7 +1,119 @@
 ﻿@page "/"
+@layout MainLayout
+@attribute [Authorize]
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Inicio — Mecánicas Jholversito</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (redirigiendo)
+{
+    <div class="flex items-center justify-center py-20">
+        <span class="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-red-600"></span>
+    </div>
+}
+else
+{
+    <div class="max-w-5xl mx-auto space-y-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">
+                Hola, @(CorreoCorto)
+            </h1>
+            <p class="text-slate-500 mt-1">Bienvenido al panel de Mecánicas Jholversito</p>
+        </div>
 
-Welcome to your new app.
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <AuthorizeView Roles="Admin">
+                <a href="admin"
+                   class="group block rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-red-200 transition-all">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-sm font-bold text-red-700 group-hover:bg-red-600 group-hover:text-white transition-all">
+                        AD
+                    </div>
+                    <h2 class="mt-4 text-lg font-semibold text-slate-800">Panel admin</h2>
+                    <p class="text-slate-500 text-sm mt-1">Resumen, personal y órdenes del taller.</p>
+                </a>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Mecánico">
+                <a href="mecanico"
+                   class="group block rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-red-200 transition-all">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-sm font-bold text-red-700 group-hover:bg-red-600 group-hover:text-white transition-all">
+                        MC
+                    </div>
+                    <h2 class="mt-4 text-lg font-semibold text-slate-800">Mis órdenes</h2>
+                    <p class="text-slate-500 text-sm mt-1">Órdenes de servicio asignadas a ti.</p>
+                </a>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Recepcionista">
+                <a href="recepcion"
+                   class="group block rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-red-200 transition-all">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-sm font-bold text-red-700 group-hover:bg-red-600 group-hover:text-white transition-all">
+                        RC
+                    </div>
+                    <h2 class="mt-4 text-lg font-semibold text-slate-800">Recepción</h2>
+                    <p class="text-slate-500 text-sm mt-1">Dashboard operativo del taller.</p>
+                </a>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <a href="clientes"
+                   class="group block rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-red-200 transition-all">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-sm font-bold text-red-700 group-hover:bg-red-600 group-hover:text-white transition-all">
+                        CL
+                    </div>
+                    <h2 class="mt-4 text-lg font-semibold text-slate-800">Clientes</h2>
+                    <p class="text-slate-500 text-sm mt-1">Administra el registro de clientes del taller.</p>
+                </a>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin,Recepcionista,Mecánico">
+                <a href="vehiculos"
+                   class="group block rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-red-200 transition-all">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-sm font-bold text-red-700 group-hover:bg-red-600 group-hover:text-white transition-all">
+                        VH
+                    </div>
+                    <h2 class="mt-4 text-lg font-semibold text-slate-800">Vehículos</h2>
+                    <p class="text-slate-500 text-sm mt-1">Consulta la flota registrada y filtra por VIN.</p>
+                </a>
+            </AuthorizeView>
+
+            <a href="seguimiento"
+               class="group block rounded-2xl bg-gradient-to-br from-red-800 to-red-950 p-6 text-white shadow-lg">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-sm font-bold mb-3">
+                    SG
+                </div>
+                <h2 class="text-lg font-semibold">Seguimiento cliente</h2>
+                <p class="text-red-200 text-sm mt-1">Consulta pública del estado de una orden.</p>
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+    private bool redirigiendo = true;
+
+    private string CorreoCorto =>
+        string.IsNullOrWhiteSpace(AuthService.Correo)
+            ? "Usuario"
+            : AuthService.Correo.Split('@')[0];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var destino = RoleNavigation.GetHomeRoute(user);
+            if (destino != "/")
+            {
+                Navigation.NavigateTo(destino, replace: true);
+                return;
+            }
+        }
+
+        redirigiendo = false;
+    }
+}

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Api.Helpers;
 using Application.Dtos;
 using Application.Exceptions;
@@ -26,6 +27,25 @@ public class OrdenesServicioController(IOrdenServicioService ordenServicioServic
     {
         var result = await ordenServicioService.ListarAsync(
             pageNumber, pageSize, estado, idCliente, idMecanico, desde, hasta);
+        PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
+        return Ok(result.Items);
+    }
+
+    /// <summary>Lista las órdenes asignadas al mecánico autenticado.</summary>
+    [HttpGet("mis-ordenes")]
+    [Authorize(Roles = "Mecánico")]
+    public async Task<ActionResult<IEnumerable<OrdenServicioDto>>> MisOrdenes(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? estado = null)
+    {
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+        if (!int.TryParse(idClaim, out var idMecanico))
+            return Unauthorized();
+
+        var result = await ordenServicioService.ListarAsync(
+            pageNumber, pageSize, estado, null, idMecanico, null, null);
         PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
         return Ok(result.Items);
     }

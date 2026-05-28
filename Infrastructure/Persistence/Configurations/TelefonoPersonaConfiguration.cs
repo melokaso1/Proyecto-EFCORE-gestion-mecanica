@@ -12,13 +12,13 @@ public class TelefonoPersonaConfiguration : IEntityTypeConfiguration<TelefonoPer
         builder.HasKey(t => t.IdTelefonoPersona);
         builder.HasIndex(t => new { t.IdCodigoTelefono, t.NumeroTelefono }).IsUnique();
         builder.Property(t => t.NumeroTelefono).HasMaxLength(30).IsRequired();
-        builder.HasOne<Persona>()
-            .WithMany()
-            .HasForeignKey(t => t.IdPersona)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<CodigoTelefono>()
+        builder.HasOne(t => t.CodigoTelefono)
             .WithMany()
             .HasForeignKey(t => t.IdCodigoTelefono)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Persona>()
+            .WithMany(p => p.TelefonosPersona)
+            .HasForeignKey(t => t.IdPersona)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

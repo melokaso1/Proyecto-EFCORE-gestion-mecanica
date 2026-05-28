@@ -23,6 +23,25 @@ public class VehiculosController(IVehiculoService vehiculoService) : ControllerB
     {
         var result = await vehiculoService.ListarAsync(pageNumber, pageSize, idCliente, vin);
         PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
+
+        // #region agent log
+        Api.DebugSessionLogger.Log(
+            location: "Api/Controllers/VehiculosController.cs:Listar",
+            message: "Vehiculos listed",
+            data: new
+            {
+                pageNumber,
+                pageSize,
+                idCliente,
+                vinLen = vin?.Length,
+                total = result.TotalCount,
+                returned = result.Items.Count,
+                tipoVehiculoSample = result.Items.FirstOrDefault()?.TipoVehiculo
+            },
+            hypothesisId: "H3-tipo-vehiculo-missing",
+            runId: "pre-fix");
+        // #endregion agent log
+
         return Ok(result.Items);
     }
 

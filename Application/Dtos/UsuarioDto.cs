@@ -17,6 +17,14 @@ public class CreateUsuarioDto
     public int IdRol { get; set; }
 }
 
+public class RegistroUsuarioDto
+{
+    public string Nombres { get; set; } = string.Empty;
+    public string Apellidos { get; set; } = string.Empty;
+    public string Correo { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
 public class LoginDto
 {
     public string Correo { get; set; } = string.Empty;

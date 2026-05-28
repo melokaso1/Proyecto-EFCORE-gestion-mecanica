@@ -1,0 +1,165 @@
+@page "/vehiculos"
+@layout MainLayout
+@attribute [Authorize]
+@inject IVehiculosService VehiculosService
+
+<PageTitle>Vehículos — Mecánicas Jholversito</PageTitle>
+
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Vehículos</h1>
+            <p class="text-sm text-slate-500 mt-1">Listado del parque registrado. Filtra por VIN (contiene).</p>
+        </div>
+        <AuthorizeView Roles="Admin">
+            <a href="/admin"
+               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Volver al panel admin
+            </a>
+        </AuthorizeView>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div class="flex-1">
+            <label class="block text-xs font-medium text-slate-500 mb-1">VIN</label>
+            <input type="text"
+                   @bind="filtroVin"
+                   @bind:event="oninput"
+                   placeholder="Ej. 1HGBH41JXMN109186"
+                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+        </div>
+        <button type="button"
+                class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                @onclick="BuscarAsync">
+            Buscar
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(mensajeError))
+    {
+        <div class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">@mensajeError</div>
+    }
+
+    @if (cargando)
+    {
+        <p class="text-sm text-slate-500">Cargando vehículos...</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Marca</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Modelo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Tipo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">VIN</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Año</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Km</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (items.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No hay vehículos que coincidan.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var v in items)
+                        {
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-slate-800">@v.Marca</td>
+                                <td class="px-4 py-3 text-sm text-slate-800">@v.Modelo</td>
+                                <td class="px-4 py-3 text-sm text-slate-600">@v.TipoVehiculo</td>
+                                <td class="px-4 py-3 text-sm font-mono text-slate-600">@v.VIN</td>
+                                <td class="px-4 py-3 text-sm text-slate-600">@v.Anio</td>
+                                <td class="px-4 py-3 text-sm text-slate-600">@v.Kilometraje.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalCount > pageSize)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+                <span>Página @pageNumber · @totalCount registros</span>
+                <div class="flex gap-2">
+                    <button type="button"
+                            disabled="@(pageNumber <= 1)"
+                            class="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-40"
+                            @onclick="PaginaAnteriorAsync">
+                        Anterior
+                    </button>
+                    <button type="button"
+                            disabled="@(pageNumber * pageSize >= totalCount)"
+                            class="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-40"
+                            @onclick="PaginaSiguienteAsync">
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private const int pageSize = 15;
+    private List<VehiculoListDto> items = [];
+    private int totalCount;
+    private int pageNumber = 1;
+    private string filtroVin = string.Empty;
+    private string? vinAplicado;
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
+
+    private async Task BuscarAsync()
+    {
+        pageNumber = 1;
+        vinAplicado = string.IsNullOrWhiteSpace(filtroVin) ? null : filtroVin.Trim();
+        await CargarAsync();
+    }
+
+    private async Task PaginaAnteriorAsync()
+    {
+        if (pageNumber <= 1) return;
+        pageNumber--;
+        await CargarAsync();
+    }
+
+    private async Task PaginaSiguienteAsync()
+    {
+        if (pageNumber * pageSize >= totalCount) return;
+        pageNumber++;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            var result = await VehiculosService.GetVehiculosAsync(pageNumber, pageSize, vinAplicado);
+            items = result.Items;
+            totalCount = result.TotalCount;
+        }
+        catch
+        {
+            mensajeError = "No se pudo cargar el listado. Verifica la API y tu sesión.";
+            items = [];
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

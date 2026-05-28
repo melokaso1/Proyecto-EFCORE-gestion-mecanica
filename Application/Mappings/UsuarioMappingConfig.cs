@@ -23,6 +23,12 @@ public class UsuarioMappingConfig : IRegister
         var correo = usuario.Persona?.CorreosPersona
             .FirstOrDefault(c => c.EsPrincipal);
 
-        return correo?.UsuarioCorreo ?? string.Empty;
+        if (correo is null)
+            return string.Empty;
+
+        var dominio = correo.DominioCorreo?.Dominio;
+        return string.IsNullOrWhiteSpace(dominio)
+            ? correo.UsuarioCorreo
+            : $"{correo.UsuarioCorreo}@{dominio}";
     }
 }

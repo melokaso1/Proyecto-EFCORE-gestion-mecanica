@@ -4,6 +4,8 @@ public class ClienteDto
 {
     public int IdCliente { get; set; }
     public PersonaDto Persona { get; set; } = null!;
+    public string CorreoPrincipal { get; set; } = string.Empty;
+    public string TelefonoPrincipal { get; set; } = string.Empty;
     public bool Estado { get; set; }
 }
 

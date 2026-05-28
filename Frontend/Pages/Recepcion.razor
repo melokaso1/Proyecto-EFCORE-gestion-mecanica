@@ -1,0 +1,126 @@
+@page "/recepcion"
+@layout MainLayout
+@attribute [Authorize(Roles = "Recepcionista")]
+@inject IDashboardService DashboardService
+
+<PageTitle>Recepción — Mecánicas Jholversito</PageTitle>
+
+<div class="max-w-6xl mx-auto space-y-10 pb-8">
+    <header class="border-b border-slate-200 pb-6">
+        <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Recepción</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Panel de recepción</h1>
+        <p class="text-sm text-slate-600 mt-2">Resumen del taller y acceso rápido a módulos operativos.</p>
+    </header>
+
+    @if (cargando)
+    {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            @for (var i = 0; i < 3; i++)
+            {
+                <div class="h-28 animate-pulse rounded-2xl bg-slate-200/80"></div>
+            }
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@error</div>
+    }
+    else if (dashboard is not null)
+    {
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Clientes</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900">@dashboard.TotalClientes</p>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Vehículos</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900">@dashboard.TotalVehiculos</p>
+            </article>
+            <article class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Órdenes hoy</p>
+                <p class="mt-2 text-3xl font-bold text-red-900">@dashboard.OrdenesHoy</p>
+            </article>
+        </section>
+
+        <section class="space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Accesos rápidos</h2>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <a href="/clientes"
+                   class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-red-200 hover:shadow-md">
+                    <h3 class="font-semibold text-slate-900">Clientes</h3>
+                    <p class="text-sm text-slate-600 mt-1">Consultar y registrar clientes del taller.</p>
+                </a>
+                <a href="/vehiculos"
+                   class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-red-200 hover:shadow-md">
+                    <h3 class="font-semibold text-slate-900">Vehículos</h3>
+                    <p class="text-sm text-slate-600 mt-1">Flota registrada y búsqueda por VIN.</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Órdenes recientes</h2>
+            @if (dashboard.OrdenesRecientes.Count == 0)
+            {
+                <p class="text-sm text-slate-500">No hay órdenes registradas.</p>
+            }
+            else
+            {
+                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <tr>
+                                    <th class="px-5 py-3">Orden</th>
+                                    <th class="px-5 py-3">Cliente</th>
+                                    <th class="px-5 py-3">Vehículo</th>
+                                    <th class="px-5 py-3">Estado</th>
+                                    <th class="px-5 py-3">Ingreso</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var orden in dashboard.OrdenesRecientes)
+                                {
+                                    <tr>
+                                        <td class="px-5 py-3 font-medium">#@orden.IdOrdenServicio</td>
+                                        <td class="px-5 py-3">@orden.ClienteNombre</td>
+                                        <td class="px-5 py-3">
+                                            <span class="font-medium">@orden.MarcaModelo</span>
+                                            <span class="block text-xs text-slate-500 font-mono">@orden.VIN</span>
+                                        </td>
+                                        <td class="px-5 py-3">@orden.Estado</td>
+                                        <td class="px-5 py-3">@orden.FechaIngreso.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private bool cargando = true;
+    private string? error;
+    private RecepcionDashboardDto? dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            dashboard = await DashboardService.GetRecepcionAsync();
+            if (dashboard is null)
+                error = "No se pudo cargar el panel de recepción.";
+        }
+        catch
+        {
+            error = "No se pudo conectar con la API.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

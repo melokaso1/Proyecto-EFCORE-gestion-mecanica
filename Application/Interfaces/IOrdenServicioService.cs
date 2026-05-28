@@ -16,4 +16,5 @@ public interface IOrdenServicioService
         DateTime? desde,
         DateTime? hasta);
     Task<OrdenServicioDto?> ObtenerPorIdAsync(int id);
+    Task<SeguimientoOrdenDto?> ConsultarSeguimientoAsync(string documento, string? vin, int? codigoOrden);
 }

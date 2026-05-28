@@ -1,16 +1,169 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="flex h-screen bg-slate-100">
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex w-72 flex-col bg-red-950 text-white">
+        <div class="px-6 py-8 border-b border-red-900">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500 text-sm font-bold shadow-lg shadow-red-500/30">
+                    MJ
+                </div>
+                <div>
+                    <p class="font-bold text-lg leading-tight tracking-tight">Mecánicas</p>
+                    <p class="text-red-400 text-sm font-medium">Jholversito</p>
+                </div>
+            </div>
+            <p class="text-slate-400 text-xs mt-4">Panel administrativo del taller</p>
         </div>
 
-        <article class="content px-4">
+        <nav class="flex-1 px-4 py-6 space-y-1">
+            <AuthorizeView Roles="Cliente">
+                <NavLink href="cliente"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Mi taller
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin">
+                <NavLink href="admin"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Panel admin
+                </NavLink>
+                <NavLink href="usuarios"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Usuarios y roles
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Mecánico">
+                <NavLink href="mecanico"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Mis órdenes
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Recepcionista">
+                <NavLink href="recepcion"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Recepción
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <NavLink href="clientes"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Clientes
+                </NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista,Mecánico">
+                <NavLink href="vehiculos"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Vehículos
+                </NavLink>
+            </AuthorizeView>
+            <NavLink href="seguimiento"
+                     class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                     ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                Seguimiento
+            </NavLink>
+        </nav>
+
+        <div class="px-4 py-5 border-t border-red-900">
+            <div class="flex items-center gap-3 px-2 mb-3">
+                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-red-400 to-red-800 flex items-center justify-center text-sm font-bold text-white">
+                    @(InicialUsuario)
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-white truncate">@AuthService.Correo</p>
+                    <p class="text-xs text-slate-400">Sesión activa</p>
+                </div>
+            </div>
+            <button type="button"
+                    class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                    @onclick="CerrarSesionAsync">
+                Cerrar sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <div class="flex flex-1 flex-col min-w-0">
+        <!-- Top bar mobile + desktop -->
+        <header class="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 py-3 lg:px-8">
+            <div class="flex items-center gap-3 lg:hidden">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500 text-xs font-bold">MJ</div>
+                <span class="font-semibold text-slate-800 text-sm">Jholversito</span>
+            </div>
+            <div class="hidden lg:block">
+                <p class="text-xs text-slate-400 uppercase tracking-wider font-medium">Taller automotriz</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="hidden sm:inline text-sm text-slate-500 truncate max-w-[200px]">@AuthService.Correo</span>
+                <button type="button"
+                        class="lg:hidden px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg"
+                        @onclick="CerrarSesionAsync">
+                    Salir
+                </button>
+            </div>
+        </header>
+
+        <!-- Nav mobile -->
+        <nav class="lg:hidden flex gap-1 px-4 py-2 bg-white border-b border-slate-200 overflow-x-auto">
+            <AuthorizeView Roles="Cliente">
+                <NavLink href="cliente"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Mi taller</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin">
+                <NavLink href="admin"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Admin</NavLink>
+                <NavLink href="usuarios"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Usuarios</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Mecánico">
+                <NavLink href="mecanico"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Órdenes</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Recepcionista">
+                <NavLink href="recepcion"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Recepción</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <NavLink href="clientes"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Clientes</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista,Mecánico">
+                <NavLink href="vehiculos"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Vehículos</NavLink>
+            </AuthorizeView>
+        </nav>
+
+        <main class="flex-1 overflow-auto p-4 lg:p-8">
             @Body
-        </article>
-    </main>
+        </main>
+    </div>
 </div>
+
+@code {
+    private string InicialUsuario =>
+        string.IsNullOrWhiteSpace(AuthService.Correo)
+            ? "?"
+            : AuthService.Correo[..1].ToUpperInvariant();
+
+    private async Task CerrarSesionAsync()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

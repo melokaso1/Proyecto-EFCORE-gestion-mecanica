@@ -7,4 +7,5 @@ public class CorreoPersona
     public int IdDominioCorreo { get; set; }
     public string UsuarioCorreo { get; set; } = string.Empty;
     public bool EsPrincipal { get; set; }
+    public DominioCorreo? DominioCorreo { get; set; }
 }

@@ -15,6 +15,7 @@ public class AutoTallerDbContext(DbContextOptions<AutoTallerDbContext> options) 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Rol> Roles => Set<Rol>();
+    public DbSet<TipoVehiculo> TiposVehiculo => Set<TipoVehiculo>();
     public DbSet<MarcaVehiculo> MarcasVehiculo => Set<MarcaVehiculo>();
     public DbSet<ModeloVehiculo> ModelosVehiculo => Set<ModeloVehiculo>();
     public DbSet<Vehiculo> Vehiculos => Set<Vehiculo>();

@@ -1,0 +1,14 @@
+@inject NavigationManager Navigation
+
+@code {
+    protected override void OnInitialized()
+    {
+        var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+        if (string.IsNullOrWhiteSpace(returnUrl) || returnUrl == "login")
+            returnUrl = "";
+
+        Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl)
+            ? "/login"
+            : $"/login?returnUrl={returnUrl}", replace: true);
+    }
+}

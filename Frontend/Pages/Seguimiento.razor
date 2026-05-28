@@ -1,0 +1,194 @@
+@page "/seguimiento"
+@layout AuthLayout
+@attribute [AllowAnonymous]
+@inject ISeguimientoService SeguimientoService
+
+<PageTitle>Seguimiento de orden — Mecánicas Jholversito</PageTitle>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-100 via-white to-red-50 py-10 px-4">
+    <div class="max-w-xl mx-auto space-y-8">
+        <div class="text-center space-y-2">
+            <div class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 text-white font-bold shadow-lg shadow-red-600/30">MJ</div>
+            <h1 class="text-2xl font-bold text-slate-900">Seguimiento de servicio</h1>
+            <p class="text-sm text-slate-600">Consulta el estado de tu vehículo con tu documento y VIN o número de orden.</p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Documento del cliente</label>
+                    <input type="text"
+                           @bind="documento"
+                           placeholder="Ej: 1012345678"
+                           class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                </div>
+
+                <div class="flex gap-2 text-sm">
+                    <button type="button"
+                            class="flex-1 rounded-lg py-2 font-medium transition @(modoVin ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600")"
+                            @onclick="() => modoVin = true">
+                        Por VIN
+                    </button>
+                    <button type="button"
+                            class="flex-1 rounded-lg py-2 font-medium transition @(!modoVin ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600")"
+                            @onclick="() => modoVin = false">
+                        Por número de orden
+                    </button>
+                </div>
+
+                @if (modoVin)
+                {
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">VIN del vehículo</label>
+                        <input type="text"
+                               @bind="vin"
+                               placeholder="Ej: 1HGBH41JXMN109186"
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Número de orden</label>
+                        <input type="number"
+                               @bind="codigoOrden"
+                               placeholder="Ej: 1"
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    <div class="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">@mensajeError</div>
+                }
+
+                <button type="button"
+                        disabled="@cargando"
+                        class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold shadow-md transition"
+                        @onclick="ConsultarAsync">
+                    @if (cargando)
+                    {
+                        <span>Consultando...</span>
+                    }
+                    else
+                    {
+                        <span>Consultar estado</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        @if (resultado is not null)
+        {
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg space-y-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Orden #@resultado.IdOrdenServicio</p>
+                        <h2 class="text-xl font-bold text-slate-900 mt-1">@resultado.MarcaModelo (@resultado.Anio)</h2>
+                        <p class="text-xs font-mono text-slate-500 mt-1">@resultado.VIN</p>
+                    </div>
+                    <span class="shrink-0 rounded-full px-3 py-1 text-sm font-semibold @EstadoClase(resultado.Estado)">
+                        @resultado.Estado
+                    </span>
+                </div>
+
+                <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                        <dt class="text-slate-500">Cliente</dt>
+                        <dd class="font-medium text-slate-900">@resultado.ClienteNombre</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Tipo de servicio</dt>
+                        <dd class="font-medium text-slate-900">@resultado.TipoServicio</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Fecha de ingreso</dt>
+                        <dd class="font-medium text-slate-900">@resultado.FechaIngreso.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Entrega estimada</dt>
+                        <dd class="font-medium text-slate-900">
+                            @(resultado.FechaEstimadaEntrega?.ToLocalTime().ToString("dd/MM/yyyy") ?? "Por confirmar")
+                        </dd>
+                    </div>
+                </dl>
+
+                @if (!string.IsNullOrWhiteSpace(resultado.TrabajoRealizado))
+                {
+                    <div class="rounded-xl bg-slate-50 px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Trabajo realizado</p>
+                        <p class="text-sm text-slate-700">@resultado.TrabajoRealizado</p>
+                    </div>
+                }
+            </div>
+        }
+
+        <p class="text-center text-sm text-slate-500">
+            <a href="/login" class="text-red-600 hover:underline font-medium">Iniciar sesión</a>
+            si eres personal del taller.
+        </p>
+    </div>
+</div>
+
+@code {
+    private string documento = string.Empty;
+    private string vin = string.Empty;
+    private int? codigoOrden;
+    private bool modoVin = true;
+    private bool cargando;
+    private string? mensajeError;
+    private SeguimientoOrdenDto? resultado;
+
+    private async Task ConsultarAsync()
+    {
+        mensajeError = null;
+        resultado = null;
+
+        if (string.IsNullOrWhiteSpace(documento))
+        {
+            mensajeError = "Ingresa tu número de documento.";
+            return;
+        }
+
+        if (modoVin && string.IsNullOrWhiteSpace(vin))
+        {
+            mensajeError = "Ingresa el VIN del vehículo.";
+            return;
+        }
+
+        if (!modoVin && codigoOrden is null or <= 0)
+        {
+            mensajeError = "Ingresa un número de orden válido.";
+            return;
+        }
+
+        cargando = true;
+        try
+        {
+            var (res, error) = await SeguimientoService.ConsultarAsync(
+                documento,
+                modoVin ? vin : null,
+                modoVin ? null : codigoOrden);
+
+            if (res is null)
+            {
+                mensajeError = error;
+                return;
+            }
+
+            resultado = res;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private static string EstadoClase(string estado) => estado switch
+    {
+        "Pendiente" => "bg-amber-100 text-amber-800",
+        "En Proceso" => "bg-blue-100 text-blue-800",
+        "Completada" => "bg-emerald-100 text-emerald-800",
+        _ => "bg-slate-100 text-slate-700"
+    };
+}

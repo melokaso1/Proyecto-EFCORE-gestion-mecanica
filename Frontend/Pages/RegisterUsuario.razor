@@ -1,0 +1,160 @@
+@page "/registro"
+@page "/registro/usuario"
+@layout AuthLayout
+
+<PageTitle>Regístrate — Mecánicas Jholversito</PageTitle>
+
+<div class="flex min-h-screen flex-col-reverse lg:flex-row">
+    <div class="flex flex-1 items-center justify-center p-6 sm:p-12 bg-white">
+        <div class="w-full max-w-md">
+            <div class="lg:hidden flex items-center gap-3 mb-8">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-sm font-bold text-white">MJ</div>
+                <div>
+                    <p class="font-bold text-slate-800 text-lg">Regístrate</p>
+                    <p class="text-slate-500 text-sm">Crea tu cuenta en el taller</p>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-red-100 bg-red-50/30 p-8 shadow-lg shadow-red-100/50">
+                <h2 class="text-2xl font-bold text-slate-800 mb-1">Regístrate</h2>
+                <p class="text-slate-500 text-sm mb-6">Crea tu cuenta. El administrador asignará tu rol desde el panel de gestión.</p>
+
+                @if (!string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    <div class="rounded-xl bg-red-50 border border-red-100 p-4 mb-6 text-sm text-red-700">
+                        @mensajeError
+                    </div>
+                }
+
+                <EditForm Model="modelo" OnValidSubmit="RegistrarAsync" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Nombres</label>
+                            <input type="text" @bind="modelo.Nombres" required
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Apellidos</label>
+                            <input type="text" @bind="modelo.Apellidos" required
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Correo</label>
+                        <input type="email" @bind="modelo.Correo" required placeholder="tu@correo.com"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+                        <input type="password" @bind="modelo.Password" required minlength="6"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Confirmar contraseña</label>
+                        <input type="password" @bind="modelo.ConfirmPassword" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                    </div>
+
+                    <button type="submit" disabled="@cargando"
+                            class="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white font-semibold shadow-lg shadow-red-500/30 transition-all">
+                        @if (cargando)
+                        {
+                            <span class="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                            <span>Registrando...</span>
+                        }
+                        else
+                        {
+                            <span>Regístrate</span>
+                        }
+                    </button>
+                </EditForm>
+            </div>
+
+            <div class="mt-6 text-center text-sm text-slate-500">
+                <a href="/login" class="text-red-600 hover:text-red-700 font-medium">← Ya tengo cuenta</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-bl from-red-600 via-red-800 to-red-950">
+        <div class="absolute inset-0 opacity-10"
+             style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;40&quot; height=&quot;40&quot; viewBox=&quot;0 0 40 40&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;0.6&quot;%3E%3Cpath d=&quot;M0 40L40 0H20L0 20M40 40V20L20 40&quot;/%3E%3C/g%3E%3C/svg%3E');"></div>
+        <div class="relative z-10 flex flex-col justify-center px-16 text-white">
+            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur text-lg font-bold mb-8">
+                MJ
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight mb-4">Crea tu<br/>cuenta</h1>
+            <p class="text-red-100 text-lg leading-relaxed max-w-md">
+                Regístrate con tus datos. El super admin revisará tu solicitud y te asignará el rol correspondiente.
+            </p>
+            <div class="mt-10 space-y-3 text-sm text-red-100/90">
+                <div class="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur p-4">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">1</span>
+                    <span>Completa el formulario de registro</span>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur p-4">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">2</span>
+                    <span>El admin revisa y asigna tu rol</span>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur p-4">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">3</span>
+                    <span>Inicia sesión cuando estés aprobado</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private IUsuariosService UsuariosService { get; set; } = null!;
+    [Inject] private AuthService AuthService { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private readonly RegisterUserDto modelo = new();
+    private bool cargando;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+        if (AuthService.IsAuthenticated)
+            Navigation.NavigateTo("/");
+    }
+
+    private async Task RegistrarAsync()
+    {
+        mensajeError = null;
+
+        if (modelo.Password != modelo.ConfirmPassword)
+        {
+            mensajeError = "Las contraseñas no coinciden.";
+            return;
+        }
+
+        if (modelo.Password.Length < 6)
+        {
+            mensajeError = "La contraseña debe tener al menos 6 caracteres.";
+            return;
+        }
+
+        cargando = true;
+        try
+        {
+            var (success, error) = await UsuariosService.RegisterUsuarioAsync(modelo);
+            if (!success)
+            {
+                mensajeError = error;
+                return;
+            }
+
+            Navigation.NavigateTo("/login?pendiente=1", replace: true);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

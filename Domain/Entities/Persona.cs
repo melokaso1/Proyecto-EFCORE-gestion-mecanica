@@ -7,4 +7,5 @@ public class Persona
     public string Apellidos { get; set; } = string.Empty;
     public DateTime FechaRegistro { get; set; }
     public ICollection<CorreoPersona> CorreosPersona { get; set; } = [];
+    public ICollection<TelefonoPersona> TelefonosPersona { get; set; } = [];
 }

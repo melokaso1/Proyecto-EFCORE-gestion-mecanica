@@ -27,6 +27,10 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         {
             return Unauthorized(new { message = "Credenciales inválidas." });
         }
+        catch (BusinessRuleException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     /// <summary>Lista usuarios paginados.</summary>
@@ -39,6 +43,68 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         var result = await usuarioService.ListarAsync(pageNumber, pageSize);
         PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
         return Ok(result.Items);
+    }
+
+    /// <summary>Lista empleados del taller (mecánicos y recepcionistas).</summary>
+    [HttpGet("empleados")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<IEnumerable<UsuarioDto>>> ListarEmpleados(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var result = await usuarioService.ListarEmpleadosAsync(pageNumber, pageSize);
+        PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
+        return Ok(result.Items);
+    }
+
+    /// <summary>Indica si ya existe un administrador (primer registro vs. requiere admin).</summary>
+    [HttpGet("registro/admin-disponible")]
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> AdminRegistroDisponible()
+    {
+        var existe = await usuarioService.ExisteAdminAsync();
+        return Ok(new { disponible = !existe });
+    }
+
+    /// <summary>Registra un administrador (público solo si no hay admin; luego requiere Admin).</summary>
+    [HttpPost("registro/admin")]
+    [AllowAnonymous]
+    public async Task<ActionResult<UsuarioDto>> RegistrarAdmin([FromBody] CreateUsuarioDto dto)
+    {
+        try
+        {
+            var invocadoPorAdmin = User.IsInRole("Admin");
+            var usuario = await usuarioService.RegistrarAdminAsync(dto, invocadoPorAdmin);
+            return CreatedAtAction(nameof(Listar), new { id = usuario.IdUsuario }, usuario);
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>Registro público de personal (sin rol; el admin lo asigna).</summary>
+    [HttpPost("registro/usuario")]
+    [AllowAnonymous]
+    public async Task<ActionResult<UsuarioDto>> RegistrarUsuario([FromBody] RegistroUsuarioDto dto)
+    {
+        try
+        {
+            var usuario = await usuarioService.RegistrarUsuarioAsync(dto);
+            return CreatedAtAction(nameof(Listar), new { id = usuario.IdUsuario }, usuario);
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     /// <summary>Registra un nuevo usuario.</summary>
@@ -64,6 +130,10 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         {
             return NotFound();
         }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>Desactiva un usuario.</summary>
@@ -79,6 +149,10 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         catch (NotFoundException)
         {
             return NotFound();
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }

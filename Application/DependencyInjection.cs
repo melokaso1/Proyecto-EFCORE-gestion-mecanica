@@ -19,10 +19,12 @@ public static class DependencyInjection
         services.AddScoped<IClienteService, ClienteService>();
         services.AddScoped<IVehiculoService, VehiculoService>();
         services.AddScoped<IOrdenServicioService, OrdenServicioService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IRepuestoService, RepuestoService>();
         services.AddScoped<IFacturaService, FacturaService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IAuditoriaService, AuditoriaService>();
+        services.AddScoped<IClientePortalService, ClientePortalService>();
 
         return services;
     }

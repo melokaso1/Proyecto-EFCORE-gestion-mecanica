@@ -16,5 +16,10 @@ public class ModeloVehiculoConfiguration : IEntityTypeConfiguration<ModeloVehicu
             .WithMany()
             .HasForeignKey(m => m.IdMarca)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(m => m.TipoVehiculo)
+            .WithMany()
+            .HasForeignKey(m => m.IdTipoVehiculo)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
