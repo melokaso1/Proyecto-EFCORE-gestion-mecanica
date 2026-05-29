@@ -20,6 +20,29 @@ public class DiagnosticoController(IDiagnosticoService diagnosticoService) : Con
         return diag is null ? NotFound() : Ok(diag);
     }
 
+    [HttpPost("diagnostico/iniciar")]
+    [Authorize(Roles = "Mecánico")]
+    public async Task<IActionResult> IniciarDiagnostico(int idOrdenServicio)
+    {
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!int.TryParse(idClaim, out var idUsuario))
+            return Unauthorized();
+
+        try
+        {
+            await diagnosticoService.IniciarDiagnosticoAsync(idOrdenServicio, idUsuario);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (BusinessRuleException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("diagnostico")]
     [Authorize(Roles = "Mecánico")]
     public async Task<ActionResult<DiagnosticoDto>> UpsertDiagnostico(int idOrdenServicio, [FromBody] UpsertDiagnosticoDto dto)

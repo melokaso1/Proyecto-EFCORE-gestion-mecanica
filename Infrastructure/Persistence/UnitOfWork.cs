@@ -34,6 +34,9 @@ public class UnitOfWork(AutoTallerDbContext context) : IUnitOfWork, IDisposable
     private IGenericRepository<EspecializacionMecanico>? _especializacionesMecanico;
     private IGenericRepository<Pago>? _pagos;
     private IGenericRepository<TipoDocumento>? _tiposDocumento;
+    private IGenericRepository<MarcaVehiculo>? _marcasVehiculo;
+    private IGenericRepository<ModeloVehiculo>? _modelosVehiculo;
+    private IGenericRepository<TipoVehiculo>? _tiposVehiculo;
 
     public IClienteRepository Clientes => _clientes ??= new ClienteRepository(context);
     public IVehiculoRepository Vehiculos => _vehiculos ??= new VehiculoRepository(context);
@@ -61,6 +64,9 @@ public class UnitOfWork(AutoTallerDbContext context) : IUnitOfWork, IDisposable
     public IGenericRepository<EspecializacionMecanico> EspecializacionesMecanico => _especializacionesMecanico ??= new GenericRepository<EspecializacionMecanico>(context);
     public IGenericRepository<Pago> Pagos => _pagos ??= new GenericRepository<Pago>(context);
     public IGenericRepository<TipoDocumento> TiposDocumento => _tiposDocumento ??= new GenericRepository<TipoDocumento>(context);
+    public IGenericRepository<MarcaVehiculo> MarcasVehiculo => _marcasVehiculo ??= new GenericRepository<MarcaVehiculo>(context);
+    public IGenericRepository<ModeloVehiculo> ModelosVehiculo => _modelosVehiculo ??= new GenericRepository<ModeloVehiculo>(context);
+    public IGenericRepository<TipoVehiculo> TiposVehiculo => _tiposVehiculo ??= new GenericRepository<TipoVehiculo>(context);
 
     public Task<int> CommitAsync() => context.SaveChangesAsync();
 

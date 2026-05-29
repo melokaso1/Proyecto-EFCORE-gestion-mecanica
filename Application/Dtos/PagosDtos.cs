@@ -25,3 +25,11 @@ public class PagoYFacturaDto
     public FacturaDto? Factura { get; set; }
 }
 
+public class OrdenPendientePagoDto
+{
+    public int IdOrdenServicio { get; set; }
+    public string ClienteNombre { get; set; } = string.Empty;
+    public string Placa { get; set; } = string.Empty;
+    public decimal TotalEstimado { get; set; }
+}
+

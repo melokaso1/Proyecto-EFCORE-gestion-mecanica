@@ -72,6 +72,8 @@ public class ClientesService(HttpClient http, AuthService auth) : IClientesServi
         Apellidos = api.Persona?.Apellidos ?? string.Empty,
         CorreoPrincipal = api.CorreoPrincipal ?? string.Empty,
         TelefonoPrincipal = api.TelefonoPrincipal ?? string.Empty,
+        NumeroDocumento = api.NumeroDocumento ?? string.Empty,
+        IdTipoDocumento = api.IdTipoDocumento,
         Estado = api.Estado
     };
 
@@ -100,6 +102,12 @@ public class ClientesService(HttpClient http, AuthService auth) : IClientesServi
 
         [JsonPropertyName("telefonoPrincipal")]
         public string? TelefonoPrincipal { get; set; }
+
+        [JsonPropertyName("numeroDocumento")]
+        public string? NumeroDocumento { get; set; }
+
+        [JsonPropertyName("idTipoDocumento")]
+        public int IdTipoDocumento { get; set; }
 
         [JsonPropertyName("estado")]
         public bool Estado { get; set; }

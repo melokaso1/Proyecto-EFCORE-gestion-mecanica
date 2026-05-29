@@ -42,10 +42,13 @@ public class CasoRecepcionService(
         return orden is null ? null : await MapCasoAsync(orden);
     }
 
-    public async Task<PagedResultDto<CasoRecepcionDto>> ListarCasosEnRegistroAsync(int page, int size)
+    public Task<PagedResultDto<CasoRecepcionDto>> ListarCasosEnRegistroAsync(int page, int size) =>
+        ListarCasosAsync(page, size, EstadosOrden.EnRegistro);
+
+    public async Task<PagedResultDto<CasoRecepcionDto>> ListarCasosAsync(int page, int size, string? estado)
     {
         var result = await uow.OrdenesServicio.GetPagedConFiltrosAsync(
-            page, size, EstadosOrden.EnRegistro, null, null, null, null);
+            page, size, estado, null, null, null, null);
 
         var items = new List<CasoRecepcionDto>();
         foreach (var orden in result.items)

@@ -83,7 +83,7 @@
                                 <td class="px-5 py-4 text-right">
                                     <button class="px-3 py-1.5 rounded-lg text-xs bg-red-600 text-white hover:bg-red-700"
                                             @onclick="() => AbrirOrden(orden.IdOrdenServicio)">
-                                        Diagnóstico
+                                        @(orden.Estado == "Recibido" ? "Revisar" : "Abrir")
                                     </button>
                                 </td>
                             </tr>
@@ -102,7 +102,7 @@
     private List<OrdenServicioDto> ordenes = [];
     private int totalCount;
     private string? filtroActivo;
-    private readonly string?[] filtrosEstado = [null, "Pendiente", "En Proceso", "Completada", "Pendiente aprobación jefe", "Pendiente aprobación cliente"];
+    private readonly string?[] filtrosEstado = [null, "Recibido", "Diagnóstico en proceso", "Pendiente aprobación jefe", "Pendiente aprobación cliente", "Reparación en proceso"];
 
     protected override async Task OnInitializedAsync() => await CargarAsync();
 
@@ -134,6 +134,10 @@
 
     private static string EstadoClase(string estado) => estado switch
     {
+        "Recibido" => "bg-sky-100 text-sky-800",
+        "Diagnóstico en proceso" => "bg-blue-100 text-blue-800",
+        "Pendiente aprobación jefe" or "Pendiente aprobación cliente" => "bg-amber-100 text-amber-800",
+        "Reparación en proceso" => "bg-indigo-100 text-indigo-800",
         "Pendiente" => "bg-amber-100 text-amber-800",
         "En Proceso" => "bg-blue-100 text-blue-800",
         "Completada" => "bg-emerald-100 text-emerald-800",

@@ -3,6 +3,7 @@
 @attribute [Authorize(Roles = "Mecánico")]
 @using Frontend.Models
 @inject IDiagnosticoClientService Diagnostico
+@inject IOrdenesService OrdenesService
 @inject IUsuariosService UsuariosService
 
 <PageTitle>Diagnóstico — Orden #@IdOrdenServicio</PageTitle>
@@ -10,9 +11,33 @@
 <div class="max-w-5xl mx-auto space-y-8 pb-10">
     <header class="border-b border-slate-200 pb-6">
         <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Mecánico</p>
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Orden #@IdOrdenServicio</h1>
-        <p class="text-sm text-slate-600 mt-2">Registra diagnóstico y propón reparaciones por ítems.</p>
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Orden #@IdOrdenServicio</h1>
+                <p class="text-sm text-slate-600 mt-2">Revisa el vehículo, registra hallazgos y propón reparaciones.</p>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_estadoOrden))
+            {
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
+                    @_estadoOrden
+                </span>
+            }
+        </div>
     </header>
+
+    @if (_estadoOrden == "Recibido")
+    {
+        <div class="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+            <p class="text-sm text-blue-900">
+                El vehículo fue recibido. Inicia la revisión/diagnóstico cuando comiences a trabajar en la orden.
+            </p>
+            <button class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 shrink-0"
+                    disabled="@_iniciandoDiag"
+                    @onclick="IniciarDiagnosticoAsync">
+                Iniciar revisión / diagnóstico
+            </button>
+        </div>
+    }
 
     @if (_loading)
     {
@@ -175,7 +200,9 @@
     private string? _error;
     private bool _savingDiag;
     private bool _savingItem;
+    private bool _iniciandoDiag;
     private bool _diagnosticoBloqueado;
+    private string? _estadoOrden;
 
     private UpsertDiagnosticoDto _diagForm = new();
     private CreateReparacionItemDto _newItem = new();
@@ -191,6 +218,8 @@
         try
         {
             _especializaciones = await UsuariosService.GetEspecializacionesAsync();
+            var orden = await OrdenesService.GetOrdenAsync(IdOrdenServicio);
+            _estadoOrden = orden?.Estado;
             var diag = await Diagnostico.GetDiagnosticoAsync(IdOrdenServicio);
             _diagForm = new UpsertDiagnosticoDto
             {
@@ -208,6 +237,28 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task IniciarDiagnosticoAsync()
+    {
+        if (_iniciandoDiag || _estadoOrden != "Recibido")
+            return;
+
+        _iniciandoDiag = true;
+        _error = null;
+        try
+        {
+            await Diagnostico.IniciarDiagnosticoAsync(IdOrdenServicio);
+            _estadoOrden = "Diagnóstico en proceso";
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo iniciar el diagnóstico. {ex.Message}";
+        }
+        finally
+        {
+            _iniciandoDiag = false;
         }
     }
 
@@ -244,6 +295,8 @@
             await Diagnostico.CrearReparacionAsync(IdOrdenServicio, _newItem);
             _newItem = new CreateReparacionItemDto();
             _items = await Diagnostico.GetReparacionesAsync(IdOrdenServicio);
+            var orden = await OrdenesService.GetOrdenAsync(IdOrdenServicio);
+            _estadoOrden = orden?.Estado;
         }
         catch (Exception ex)
         {

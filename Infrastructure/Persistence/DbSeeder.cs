@@ -96,7 +96,12 @@ public static class DbSeeder
             new MarcaVehiculo { IdMarca = 2, NombreMarca = "Chevrolet" },
             new MarcaVehiculo { IdMarca = 3, NombreMarca = "Mazda" },
             new MarcaVehiculo { IdMarca = 4, NombreMarca = "Renault" },
-            new MarcaVehiculo { IdMarca = 5, NombreMarca = "Kia" }
+            new MarcaVehiculo { IdMarca = 5, NombreMarca = "Kia" },
+            new MarcaVehiculo { IdMarca = 6, NombreMarca = "Nissan" },
+            new MarcaVehiculo { IdMarca = 7, NombreMarca = "Hyundai" },
+            new MarcaVehiculo { IdMarca = 8, NombreMarca = "Ford" },
+            new MarcaVehiculo { IdMarca = 9, NombreMarca = "Volkswagen" },
+            new MarcaVehiculo { IdMarca = 10, NombreMarca = "Suzuki" }
         };
         context.MarcasVehiculo.AddRange(marcas);
 
@@ -107,7 +112,17 @@ public static class DbSeeder
             new ModeloVehiculo { IdModelo = 4, IdMarca = 2, IdTipoVehiculo = 4, NombreModelo = "D-Max" },
             new ModeloVehiculo { IdModelo = 5, IdMarca = 3, IdTipoVehiculo = 1, NombreModelo = "3" },
             new ModeloVehiculo { IdModelo = 6, IdMarca = 4, IdTipoVehiculo = 2, NombreModelo = "Sandero" },
-            new ModeloVehiculo { IdModelo = 7, IdMarca = 5, IdTipoVehiculo = 3, NombreModelo = "Sportage" });
+            new ModeloVehiculo { IdModelo = 7, IdMarca = 5, IdTipoVehiculo = 3, NombreModelo = "Sportage" },
+            new ModeloVehiculo { IdModelo = 8, IdMarca = 6, IdTipoVehiculo = 1, NombreModelo = "Sentra" },
+            new ModeloVehiculo { IdModelo = 9, IdMarca = 6, IdTipoVehiculo = 2, NombreModelo = "March" },
+            new ModeloVehiculo { IdModelo = 10, IdMarca = 7, IdTipoVehiculo = 1, NombreModelo = "Accent" },
+            new ModeloVehiculo { IdModelo = 11, IdMarca = 7, IdTipoVehiculo = 3, NombreModelo = "Tucson" },
+            new ModeloVehiculo { IdModelo = 12, IdMarca = 8, IdTipoVehiculo = 2, NombreModelo = "Fiesta" },
+            new ModeloVehiculo { IdModelo = 13, IdMarca = 8, IdTipoVehiculo = 5, NombreModelo = "Ranger" },
+            new ModeloVehiculo { IdModelo = 14, IdMarca = 9, IdTipoVehiculo = 2, NombreModelo = "Gol" },
+            new ModeloVehiculo { IdModelo = 15, IdMarca = 9, IdTipoVehiculo = 1, NombreModelo = "Jetta" },
+            new ModeloVehiculo { IdModelo = 16, IdMarca = 10, IdTipoVehiculo = 2, NombreModelo = "Swift" },
+            new ModeloVehiculo { IdModelo = 17, IdMarca = 10, IdTipoVehiculo = 3, NombreModelo = "Vitara" });
 
         await context.SaveChangesAsync();
         logger.LogInformation("Seed: marcas y modelos de vehículo creados.");

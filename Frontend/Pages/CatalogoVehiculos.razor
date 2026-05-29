@@ -1,0 +1,360 @@
+@page "/admin/catalogo-vehiculos"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject ICatalogoClientService CatalogoService
+
+<PageTitle>Catálogo de vehículos — Admin</PageTitle>
+
+<div class="max-w-6xl mx-auto space-y-8 pb-10">
+    <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Administración</p>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Catálogo marcas y modelos</h1>
+            <p class="text-sm text-slate-600 mt-2">Gestiona las marcas y modelos disponibles al registrar vehículos en recepción.</p>
+        </div>
+        <a href="/admin"
+           class="inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Volver al panel
+        </a>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(mensajeGlobal))
+    {
+        <div class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">@mensajeGlobal</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(errorGlobal))
+    {
+        <div class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">@errorGlobal</div>
+    }
+
+    @if (cargando)
+    {
+        <div class="h-40 animate-pulse rounded-2xl bg-slate-200/80"></div>
+    }
+    else
+    {
+        <section class="space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Marcas</h2>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input class="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
+                       placeholder="Nombre de marca"
+                       @bind="nuevaMarca" />
+                <button type="button"
+                        class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                        disabled="@guardando"
+                        @onclick="CrearMarcaAsync">
+                    Agregar marca
+                </button>
+            </div>
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-5 py-3">Marca</th>
+                            <th class="px-5 py-3 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var marca in marcas)
+                        {
+                            <tr>
+                                <td class="px-5 py-3">
+                                    @if (marcaEditando == marca.IdMarca)
+                                    {
+                                        <input class="w-full max-w-xs rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+                                               @bind="nombreMarcaEdit" />
+                                    }
+                                    else
+                                    {
+                                        <span class="font-medium text-slate-900">@marca.NombreMarca</span>
+                                    }
+                                </td>
+                                <td class="px-5 py-3 text-right space-x-2">
+                                    @if (marcaEditando == marca.IdMarca)
+                                    {
+                                        <button type="button" class="text-xs font-semibold text-red-600" @onclick="() => GuardarMarcaAsync(marca.IdMarca)">Guardar</button>
+                                        <button type="button" class="text-xs text-slate-500" @onclick="CancelarEdicionMarca">Cancelar</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="text-xs font-semibold text-slate-600 hover:text-red-600" @onclick="() => EditarMarca(marca)">Editar</button>
+                                        <button type="button" class="text-xs font-semibold text-red-600" @onclick="() => EliminarMarcaAsync(marca.IdMarca)">Eliminar</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Modelos</h2>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <select class="rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="nuevoModelo.IdMarca">
+                    <option value="0">Marca…</option>
+                    @foreach (var m in marcas)
+                    {
+                        <option value="@m.IdMarca">@m.NombreMarca</option>
+                    }
+                </select>
+                <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Nombre modelo" @bind="nuevoModelo.NombreModelo" />
+                <select class="rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="nuevoModelo.IdTipoVehiculo">
+                    <option value="0">Tipo…</option>
+                    @foreach (var t in tiposVehiculo)
+                    {
+                        <option value="@t.IdTipoVehiculo">@t.Nombre</option>
+                    }
+                </select>
+                <button type="button"
+                        class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                        disabled="@guardando"
+                        @onclick="CrearModeloAsync">
+                    Agregar modelo
+                </button>
+            </div>
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-5 py-3">Marca</th>
+                            <th class="px-5 py-3">Modelo</th>
+                            <th class="px-5 py-3">Tipo</th>
+                            <th class="px-5 py-3 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var modelo in modelos)
+                        {
+                            <tr>
+                                @if (modeloEditando == modelo.IdModelo)
+                                {
+                                    <td class="px-5 py-3">
+                                        <select class="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm" @bind="modeloEditForm.IdMarca">
+                                            @foreach (var m in marcas)
+                                            {
+                                                <option value="@m.IdMarca">@m.NombreMarca</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="px-5 py-3">
+                                        <input class="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm" @bind="modeloEditForm.NombreModelo" />
+                                    </td>
+                                    <td class="px-5 py-3">
+                                        <select class="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm" @bind="modeloEditForm.IdTipoVehiculo">
+                                            @foreach (var t in tiposVehiculo)
+                                            {
+                                                <option value="@t.IdTipoVehiculo">@t.Nombre</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="px-5 py-3 text-right space-x-2">
+                                        <button type="button" class="text-xs font-semibold text-red-600" @onclick="() => GuardarModeloAsync(modelo.IdModelo)">Guardar</button>
+                                        <button type="button" class="text-xs text-slate-500" @onclick="CancelarEdicionModelo">Cancelar</button>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="px-5 py-3">@modelo.Marca</td>
+                                    <td class="px-5 py-3 font-medium">@modelo.Modelo</td>
+                                    <td class="px-5 py-3 text-slate-600">@modelo.TipoVehiculo</td>
+                                    <td class="px-5 py-3 text-right space-x-2">
+                                        <button type="button" class="text-xs font-semibold text-slate-600 hover:text-red-600" @onclick="() => EditarModelo(modelo)">Editar</button>
+                                        <button type="button" class="text-xs font-semibold text-red-600" @onclick="() => EliminarModeloAsync(modelo.IdModelo)">Eliminar</button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private bool cargando = true;
+    private bool guardando;
+    private string? mensajeGlobal;
+    private string? errorGlobal;
+    private List<MarcaVehiculoDto> marcas = [];
+    private List<ModeloVehiculoCatalogoDto> modelos = [];
+    private List<TipoVehiculoDto> tiposVehiculo = [];
+    private string nuevaMarca = string.Empty;
+    private CreateModeloVehiculoDto nuevoModelo = new();
+    private int? marcaEditando;
+    private string nombreMarcaEdit = string.Empty;
+    private int? modeloEditando;
+    private CreateModeloVehiculoDto modeloEditForm = new();
+
+    protected override async Task OnInitializedAsync() => await RecargarAsync();
+
+    private async Task RecargarAsync()
+    {
+        cargando = true;
+        errorGlobal = null;
+        try
+        {
+            marcas = await CatalogoService.ListarMarcasAsync();
+            modelos = await CatalogoService.ListarModelosAsync();
+            tiposVehiculo = await CatalogoService.ListarTiposVehiculoAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task CrearMarcaAsync()
+    {
+        errorGlobal = null;
+        mensajeGlobal = null;
+        guardando = true;
+        try
+        {
+            await CatalogoService.CrearMarcaAsync(new CreateMarcaVehiculoDto { NombreMarca = nuevaMarca });
+            nuevaMarca = string.Empty;
+            mensajeGlobal = "Marca creada.";
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void EditarMarca(MarcaVehiculoDto marca)
+    {
+        marcaEditando = marca.IdMarca;
+        nombreMarcaEdit = marca.NombreMarca;
+    }
+
+    private void CancelarEdicionMarca() => marcaEditando = null;
+
+    private async Task GuardarMarcaAsync(int id)
+    {
+        guardando = true;
+        errorGlobal = null;
+        try
+        {
+            await CatalogoService.ActualizarMarcaAsync(id, new CreateMarcaVehiculoDto { NombreMarca = nombreMarcaEdit });
+            marcaEditando = null;
+            mensajeGlobal = "Marca actualizada.";
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task EliminarMarcaAsync(int id)
+    {
+        errorGlobal = null;
+        guardando = true;
+        try
+        {
+            await CatalogoService.EliminarMarcaAsync(id);
+            mensajeGlobal = "Marca eliminada.";
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task CrearModeloAsync()
+    {
+        errorGlobal = null;
+        mensajeGlobal = null;
+        guardando = true;
+        try
+        {
+            await CatalogoService.CrearModeloAsync(nuevoModelo);
+            nuevoModelo = new CreateModeloVehiculoDto();
+            mensajeGlobal = "Modelo creado.";
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void EditarModelo(ModeloVehiculoCatalogoDto modelo)
+    {
+        modeloEditando = modelo.IdModelo;
+        var marca = marcas.FirstOrDefault(m => m.NombreMarca == modelo.Marca);
+        var tipo = tiposVehiculo.FirstOrDefault(t => t.Nombre == modelo.TipoVehiculo);
+        modeloEditForm = new CreateModeloVehiculoDto
+        {
+            IdMarca = marca?.IdMarca ?? 0,
+            IdTipoVehiculo = tipo?.IdTipoVehiculo ?? 0,
+            NombreModelo = modelo.Modelo
+        };
+    }
+
+    private void CancelarEdicionModelo() => modeloEditando = null;
+
+    private async Task GuardarModeloAsync(int id)
+    {
+        guardando = true;
+        errorGlobal = null;
+        try
+        {
+            await CatalogoService.ActualizarModeloAsync(id, modeloEditForm);
+            modeloEditando = null;
+            mensajeGlobal = "Modelo actualizado.";
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task EliminarModeloAsync(int id)
+    {
+        errorGlobal = null;
+        guardando = true;
+        try
+        {
+            await CatalogoService.EliminarModeloAsync(id);
+            mensajeGlobal = "Modelo eliminado.";
+            await RecargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorGlobal = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

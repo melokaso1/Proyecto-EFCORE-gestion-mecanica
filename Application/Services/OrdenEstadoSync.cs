@@ -6,7 +6,14 @@ namespace Application.Services;
 
 internal static class OrdenEstadoSync
 {
-    public static async Task SincronizarTrasDiagnosticoAsync(IUnitOfWork uow, OrdenServicio orden)
+    /// <summary>
+    /// El guardado del diagnóstico no cambia el estado de la orden; la transición a
+    /// «Diagnóstico en proceso» es explícita vía <see cref="SincronizarTrasIniciarDiagnosticoAsync"/>.
+    /// </summary>
+    public static Task SincronizarTrasDiagnosticoAsync(IUnitOfWork uow, OrdenServicio orden) =>
+        Task.CompletedTask;
+
+    public static async Task SincronizarTrasIniciarDiagnosticoAsync(IUnitOfWork uow, OrdenServicio orden)
     {
         var actual = await ObtenerNombreEstadoAsync(uow, orden);
         if (actual is EstadosOrden.Recibido or EstadosOrden.Pendiente)

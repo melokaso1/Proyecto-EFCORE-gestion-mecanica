@@ -7,6 +7,7 @@ namespace Frontend.Services;
 public interface IDiagnosticoClientService
 {
     Task<DiagnosticoDto?> GetDiagnosticoAsync(int idOrdenServicio);
+    Task IniciarDiagnosticoAsync(int idOrdenServicio);
     Task<DiagnosticoDto> UpsertDiagnosticoAsync(int idOrdenServicio, UpsertDiagnosticoDto dto);
     Task<List<ReparacionItemDto>> GetReparacionesAsync(int idOrdenServicio);
     Task<ReparacionItemDto> CrearReparacionAsync(int idOrdenServicio, CreateReparacionItemDto dto);
@@ -32,6 +33,15 @@ public class DiagnosticoClientService(HttpClient http, AuthService auth) : IDiag
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<DiagnosticoDto>(JsonOptions)
             : null;
+    }
+
+    public async Task IniciarDiagnosticoAsync(int idOrdenServicio)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"api/ordenesservicio/{idOrdenServicio}/diagnostico/iniciar");
+        auth.ApplyAuthorization(request);
+        using var response = await http.SendAsync(request);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<DiagnosticoDto> UpsertDiagnosticoAsync(int idOrdenServicio, UpsertDiagnosticoDto dto)

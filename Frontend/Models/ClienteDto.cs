@@ -7,6 +7,8 @@ public class ClienteDto
     public string Apellidos { get; set; } = string.Empty;
     public string CorreoPrincipal { get; set; } = string.Empty;
     public string TelefonoPrincipal { get; set; } = string.Empty;
+    public string NumeroDocumento { get; set; } = string.Empty;
+    public int IdTipoDocumento { get; set; }
     public bool Estado { get; set; }
 }
 

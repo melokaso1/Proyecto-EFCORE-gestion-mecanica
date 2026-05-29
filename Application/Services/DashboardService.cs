@@ -8,14 +8,14 @@ public class DashboardService(IUnitOfWork uow, IOrdenServicioService ordenServic
 {
     public async Task<AdminDashboardDto> ObtenerAdminAsync()
     {
-        var (_, totalUsuarios) = await uow.Usuarios.GetPagedAsync(1, 1, _ => true);
-        var usuarios = await uow.Usuarios.GetAllAsync();
+        var (_, totalUsuarios) = await uow.Usuarios.GetPagedAsync(1, 1, u => u.Estado);
+        var usuarios = await uow.Usuarios.FindAsync(u => u.Estado);
         var pendientes = 0;
         var empleados = 0;
         foreach (var u in usuarios)
         {
             var completo = await uow.Usuarios.GetByIdAsync(u.IdUsuario);
-            if (completo is null)
+            if (completo is null || !completo.Estado)
                 continue;
 
             if (completo.Roles.Count == 0)

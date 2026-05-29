@@ -11,47 +11,19 @@ public class VehiculosService(HttpClient http, AuthService auth) : IVehiculosSer
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<PagedResult<VehiculoListDto>> GetVehiculosAsync(int page, int size, string? vinFiltro)
+    public async Task<PagedResult<VehiculoListDto>> GetVehiculosAsync(
+        int page, int size, string? vinFiltro, string? placaFiltro = null)
     {
         var url = $"api/vehiculos?pageNumber={page}&pageSize={size}";
         if (!string.IsNullOrWhiteSpace(vinFiltro))
             url += $"&vin={Uri.EscapeDataString(vinFiltro.Trim())}";
-
-        // #region agent log
-        Frontend.DebugSessionLogger.Log(
-            location: "Frontend/Services/VehiculosService.cs:GetVehiculosAsync:request",
-            message: "Requesting vehiculos",
-            data: new
-            {
-                baseAddress = http.BaseAddress?.ToString(),
-                url,
-                page,
-                size,
-                vinLen = vinFiltro?.Length
-            },
-            hypothesisId: "H5-frontend-api-base-url-or-auth",
-            runId: "pre-fix");
-        // #endregion agent log
+        if (!string.IsNullOrWhiteSpace(placaFiltro))
+            url += $"&placa={Uri.EscapeDataString(placaFiltro.Trim())}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         auth.ApplyAuthorization(request);
 
         using var response = await http.SendAsync(request);
-
-        // #region agent log
-        Frontend.DebugSessionLogger.Log(
-            location: "Frontend/Services/VehiculosService.cs:GetVehiculosAsync:response",
-            message: "Vehiculos response received",
-            data: new
-            {
-                statusCode = (int)response.StatusCode,
-                isSuccess = response.IsSuccessStatusCode,
-                hasTotalHeader = response.Headers.Contains("X-Total-Count")
-            },
-            hypothesisId: "H5-frontend-api-base-url-or-auth",
-            runId: "pre-fix");
-        // #endregion agent log
-
         response.EnsureSuccessStatusCode();
 
         var items = await response.Content.ReadFromJsonAsync<List<VehiculoListDto>>(JsonOptions) ?? [];
@@ -65,5 +37,37 @@ public class VehiculosService(HttpClient http, AuthService auth) : IVehiculosSer
             Items = items,
             TotalCount = totalCount
         };
+    }
+
+    public async Task<VehiculoListDto> RegistrarEnCatalogoAsync(CreateVehiculoCasoDto dto)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/vehiculos/catalogo");
+        request.Content = JsonContent.Create(dto);
+        auth.ApplyAuthorization(request);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessOrThrowAsync(response);
+        return (await response.Content.ReadFromJsonAsync<VehiculoListDto>(JsonOptions))!;
+    }
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var body = await response.Content.ReadAsStringAsync();
+        string message;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            message = doc.RootElement.TryGetProperty("message", out var m)
+                ? m.GetString() ?? response.ReasonPhrase ?? "Error"
+                : response.ReasonPhrase ?? "Error";
+        }
+        catch
+        {
+            message = response.ReasonPhrase ?? "Error";
+        }
+
+        throw new InvalidOperationException(message);
     }
 }

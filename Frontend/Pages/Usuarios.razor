@@ -174,22 +174,21 @@
     else if (string.IsNullOrWhiteSpace(mensajeError))
     {
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5">
-            <div class="max-h-[min(32rem,calc(100vh-12rem))] overflow-auto">
+            <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse text-left text-sm">
                     <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-100/95 backdrop-blur-sm">
                         <tr>
                             <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Usuario</th>
                             <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Correo</th>
-                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Rol</th>
-                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Especializaciones</th>
-                            <th scope="col" class="min-w-[16rem] whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Acciones</th>
+                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Rol actual</th>
+                            <th scope="col" class="min-w-[18rem] whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Configuración</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @if (!UsuariosVisibles.Any())
                         {
                             <tr>
-                                <td colspan="5" class="px-4 py-16 text-center">
+                                <td colspan="4" class="px-4 py-16 text-center">
                                     <p class="text-sm font-medium text-slate-700">No hay resultados</p>
                                     <p class="mt-1 text-xs text-slate-500">Prueba otro criterio de búsqueda o desactiva el filtro de pendientes.</p>
                                 </td>
@@ -229,97 +228,112 @@
                                         }
                                         else
                                         {
-                                            @foreach (var r in roles)
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach (var r in roles)
+                                                {
+                                                    <span class="@RolBadgeClass(r) inline-flex rounded-full px-2.5 py-1 text-xs font-semibold">@r</span>
+                                                }
+                                            </div>
+                                            @if (mostrarEsp && (usuario.Especializaciones ?? []).Count > 0)
                                             {
-                                                <span class="@RolBadgeClass(r) mr-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold">@r</span>
+                                                <div class="mt-2 flex flex-wrap gap-1">
+                                                    @foreach (var esp in usuario.Especializaciones!)
+                                                    {
+                                                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200">@esp.Nombre</span>
+                                                    }
+                                                </div>
                                             }
                                         }
                                     </td>
-                                    <td class="px-4 py-3.5 align-middle">
-                                        @if (mostrarEsp)
-                                        {
-                                            var seleccionadas = ContarEspecializaciones(usuario.IdUsuario);
-                                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                                <select multiple
-                                                        size="@(Math.Max(2, Math.Min(catalogoEspecializaciones.Count, 4)))"
-                                                        class="min-w-[10.5rem] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25"
-                                                        aria-label="Especializaciones del mecánico"
-                                                        @onchange="(e) => OnEspecializacionesChanged(usuario.IdUsuario, e)">
-                                                    @foreach (var esp in catalogoEspecializaciones)
-                                                    {
-                                                        <option value="@esp.IdEspecializacionMecanico"
-                                                                selected="@EspecializacionSeleccionada(usuario.IdUsuario, esp.IdEspecializacionMecanico)"
-                                                                title="@ObtenerTituloEspecializacion(esp)">
-                                                            @esp.Nombre
-                                                        </option>
-                                                    }
-                                                </select>
-                                                <button type="button"
-                                                        disabled="@(guardandoEspId == usuario.IdUsuario || seleccionadas == 0)"
-                                                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45"
-                                                        @onclick="() => GuardarEspecializacionesAsync(usuario.IdUsuario)">
-                                                    @if (guardandoEspId == usuario.IdUsuario)
-                                                    {
-                                                        <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                                                        <span>Guardando</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span>Guardar</span>
-                                                    }
-                                                </button>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-xs text-slate-400">Solo para mecánicos</span>
-                                        }
-                                    </td>
-                                    <td class="px-4 py-3.5 align-middle">
+                                    <td class="overflow-visible px-4 py-3.5 align-middle">
                                         @if (esAdmin)
                                         {
-                                            <span class="text-xs text-slate-400">Protegido</span>
+                                            <span class="text-xs text-slate-400">Cuenta protegida</span>
                                         }
                                         else
                                         {
-                                            <div class="flex flex-col gap-2">
-                                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                                    <select class="min-w-[10.5rem] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25"
-                                                            value="@rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario)"
-                                                            @onchange="(e) => OnRolSeleccionadoChanged(usuario.IdUsuario, e)">
-                                                        <option value="0">Seleccionar rol</option>
-                                                        <option value="2">Mecánico</option>
-                                                        <option value="3">Recepcionista</option>
-                                                        <option value="4">Cliente</option>
-                                                        <option value="5">Jefe de mecánicos</option>
-                                                        <option value="6">Jefe de bodega</option>
-                                                    </select>
-                                                    <button type="button"
-                                                            disabled="@(asignandoId == usuario.IdUsuario || !EsRolAsignable(rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario)))"
-                                                            class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45"
-                                                            @onclick="() => AsignarRolAsync(usuario.IdUsuario)">
-                                                        @if (asignandoId == usuario.IdUsuario)
+                                            var seleccionadas = ContarEspecializaciones(usuario.IdUsuario);
+                                            var espDropdownAbierto = dropdownEspAbiertoId == usuario.IdUsuario;
+                                            var idRolSel = rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario);
+                                            var espSel = especializacionesSeleccionadas.GetValueOrDefault(usuario.IdUsuario) ?? [];
+                                            var puedeGuardar = PuedeGuardarConfiguracion(idRolSel, seleccionadas)
+                                                && (sinRol || HayCambiosPendientes(usuario, idRolSel, espSel));
+
+                                            <div class="@(mostrarEsp ? EditorPanelClass : EditorPanelClassSoloRol)">
+                                                <span class="@($"{EditorLabelClass} col-start-1 row-start-1")">Rol</span>
+                                                <select class="@($"{SelectFieldClass} col-start-2 row-start-1")"
+                                                        value="@idRolSel"
+                                                        @onchange="(e) => OnRolSeleccionadoChanged(usuario.IdUsuario, e)">
+                                                    <option value="0">Seleccionar…</option>
+                                                    <option value="2">Mecánico</option>
+                                                    <option value="3">Recepcionista</option>
+                                                    <option value="4">Cliente</option>
+                                                    <option value="5">Jefe de mecánicos</option>
+                                                    <option value="6">Jefe de bodega</option>
+                                                </select>
+
+                                                @if (mostrarEsp)
+                                                {
+                                                    <span class="@($"{EditorLabelClass} col-start-1 row-start-2")">Áreas</span>
+                                                    <div class="relative col-start-2 row-start-2 min-w-0 space-y-1">
+                                                        <p class="text-[11px] text-slate-500">Obligatorio para Mecánico</p>
+                                                        <div class="relative h-10 min-h-10">
+                                                        <button type="button"
+                                                                class="@($"{SelectFieldClass} block w-full cursor-pointer truncate text-left")"
+                                                                aria-expanded="@espDropdownAbierto"
+                                                                @onclick="() => ToggleEspDropdown(usuario.IdUsuario)">
+                                                            @ResumenEspecializaciones(usuario.IdUsuario, especializacionesSeleccionadas)
+                                                        </button>
+                                                        @if (espDropdownAbierto)
                                                         {
-                                                            <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                                                            <span>Guardando</span>
+                                                            <div class="absolute bottom-full left-0 right-0 z-30 mb-1 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-slate-900/5"
+                                                                 @onclick:stopPropagation="true">
+                                                                @foreach (var esp in catalogoEspecializaciones)
+                                                                {
+                                                                    var idEsp = esp.IdEspecializacionMecanico;
+                                                                    var marcada = EspecializacionSeleccionada(usuario.IdUsuario, idEsp);
+                                                                    <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
+                                                                        <input type="checkbox"
+                                                                               class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                                                                               checked="@marcada"
+                                                                               @onchange="(e) => OnEspecializacionCheckboxChanged(usuario.IdUsuario, idEsp, e)" />
+                                                                        <span class="truncate" title="@ObtenerTituloEspecializacion(esp)">@esp.Nombre</span>
+                                                                    </label>
+                                                                }
+                                                            </div>
                                                         }
-                                                        else
+                                                        </div>
+                                                        @if (idRolSel == 2 && seleccionadas == 0)
                                                         {
-                                                            <span>@(sinRol ? "Asignar rol" : "Guardar cambio")</span>
+                                                            <p class="text-[11px] font-medium text-amber-700">Selecciona al menos un área para guardar como Mecánico.</p>
                                                         }
-                                                    </button>
-                                                </div>
+                                                    </div>
+                                                }
+
+                                                <button type="button"
+                                                        disabled="@(guardandoId == usuario.IdUsuario || !puedeGuardar)"
+                                                        class="@($"{SaveButtonClass} col-start-3 row-start-1 self-center {(mostrarEsp ? "row-span-2" : "")}")"
+                                                        @onclick="() => GuardarConfiguracionAsync(usuario)">
+                                                    @if (guardandoId == usuario.IdUsuario)
+                                                    {
+                                                        <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                                                    }
+                                                    <span>@(sinRol ? "Asignar" : "Guardar")</span>
+                                                </button>
+
                                                 @if (puedeEliminar)
                                                 {
-                                                    <button type="button"
-                                                            class="inline-flex w-fit items-center justify-center rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
-                                                            @onclick="() => AbrirModalEliminar(usuario)">
-                                                        Eliminar
-                                                    </button>
+                                                    <div class="@(mostrarEsp ? "col-span-3 row-start-3 border-t border-slate-100 pt-2" : "col-span-3 row-start-2 border-t border-slate-100 pt-2")">
+                                                        <button type="button"
+                                                                class="text-xs font-medium text-red-600 hover:text-red-800 hover:underline"
+                                                                @onclick="() => AbrirModalEliminar(usuario)">
+                                                            Eliminar usuario
+                                                        </button>
+                                                    </div>
                                                 }
                                                 else if (EsUsuarioActual(usuario.IdUsuario))
                                                 {
-                                                    <span class="text-xs text-slate-400">Tu cuenta</span>
+                                                    <p class="@(mostrarEsp ? "col-span-3 row-start-3 border-t border-slate-100 pt-2 text-xs text-slate-400" : "col-span-3 row-start-2 border-t border-slate-100 pt-2 text-xs text-slate-400")">Tu cuenta</p>
                                                 }
                                             </div>
                                         }
@@ -333,6 +347,14 @@
         </div>
     }
 </div>
+
+@if (dropdownEspAbiertoId is not null)
+{
+    <button type="button"
+            class="fixed inset-0 z-20 cursor-default bg-transparent"
+            aria-label="Cerrar menú"
+            @onclick="CerrarEspDropdown"></button>
+}
 
 @if (usuarioAEliminar is not null)
 {
@@ -375,6 +397,24 @@
 }
 
 @code {
+    private const string EditorPanelClass =
+        "grid min-h-[5.75rem] min-w-[17rem] max-w-md grid-cols-[3.25rem_minmax(0,1fr)_5.5rem] grid-rows-[2.5rem_2.5rem_auto] items-center gap-x-2 gap-y-2.5";
+
+    private const string EditorPanelClassSoloRol =
+        "grid min-w-[17rem] max-w-md grid-cols-[3.25rem_minmax(0,1fr)_5.5rem] grid-rows-[2.5rem_auto] items-center gap-x-2 gap-y-2.5";
+
+    private const string EditorLabelClass =
+        "text-xs font-medium text-slate-500";
+
+    private const string SelectChevronBg =
+        "appearance-none bg-[length:1.25rem_1.25rem] bg-[position:right_0.625rem_center] bg-no-repeat pr-9 bg-[image:url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748b%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C/svg%3E')]";
+
+    private const string SelectFieldClass =
+        $"h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm leading-10 text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25 {SelectChevronBg}";
+
+    private const string SaveButtonClass =
+        "inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45";
+
     private List<UsuarioDto> usuarios = [];
     private readonly Dictionary<int, int> rolesSeleccionados = [];
     private readonly Dictionary<int, HashSet<int>> especializacionesSeleccionadas = [];
@@ -385,8 +425,8 @@
     private bool registrandoUsuario;
     private string? mensajeRegistroError;
     private string? mensajeRegistroExito;
-    private int? asignandoId;
-    private int? guardandoEspId;
+    private int? guardandoId;
+    private int? dropdownEspAbiertoId;
     private UsuarioDto? usuarioAEliminar;
     private bool eliminandoUsuario;
     private string? mensajeExito;
@@ -422,6 +462,26 @@
     };
 
     private static bool EsRolAsignable(int idRol) => idRol is 2 or 3 or 4 or 5 or 6;
+
+    private static bool PuedeGuardarConfiguracion(int idRol, int _) =>
+        EsRolAsignable(idRol);
+
+    private static bool HayCambiosPendientes(UsuarioDto usuario, int idRolSel, HashSet<int> espSel)
+    {
+        var rolActual = RolNombreToId((usuario.Roles ?? []).FirstOrDefault());
+        if (rolActual != idRolSel)
+            return true;
+
+        if (idRolSel != 2)
+            return false;
+
+        var guardadas = (usuario.Especializaciones ?? [])
+            .Select(e => e.IdEspecializacionMecanico)
+            .OrderBy(x => x)
+            .ToList();
+        var seleccionadas = espSel.OrderBy(x => x).ToList();
+        return !guardadas.SequenceEqual(seleccionadas);
+    }
 
     private static int RolNombreToId(string? nombre) => nombre switch
     {
@@ -465,25 +525,35 @@
     private static string ObtenerTituloEspecializacion(EspecializacionMecanicoDto esp) =>
         string.IsNullOrWhiteSpace(esp.Descripcion) ? esp.Nombre : $"{esp.Nombre}: {esp.Descripcion}";
 
-    private void OnEspecializacionesChanged(int idUsuario, ChangeEventArgs e)
+    private static string ResumenEspecializaciones(int idUsuario, Dictionary<int, HashSet<int>> seleccionadas)
     {
-        var set = new HashSet<int>();
-
-        switch (e.Value)
+        var count = seleccionadas.GetValueOrDefault(idUsuario)?.Count ?? 0;
+        return count switch
         {
-            case string[] values:
-                foreach (var value in values)
-                {
-                    if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
-                        set.Add(id);
-                }
-                break;
-            case string value when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id):
-                set.Add(id);
-                break;
+            0 => "Seleccionar…",
+            1 => "1 área",
+            _ => $"{count} áreas"
+        };
+    }
+
+    private void ToggleEspDropdown(int idUsuario) =>
+        dropdownEspAbiertoId = dropdownEspAbiertoId == idUsuario ? null : idUsuario;
+
+    private void CerrarEspDropdown() => dropdownEspAbiertoId = null;
+
+    private void OnEspecializacionCheckboxChanged(int idUsuario, int idEsp, ChangeEventArgs e)
+    {
+        if (!especializacionesSeleccionadas.TryGetValue(idUsuario, out var set))
+        {
+            set = [];
+            especializacionesSeleccionadas[idUsuario] = set;
         }
 
-        especializacionesSeleccionadas[idUsuario] = set;
+        var marcada = e.Value is bool b && b;
+        if (marcada)
+            set.Add(idEsp);
+        else
+            set.Remove(idEsp);
     }
 
     private void AbrirModalEliminar(UsuarioDto usuario) => usuarioAEliminar = usuario;
@@ -522,27 +592,53 @@
         }
     }
 
-    private async Task GuardarEspecializacionesAsync(int idUsuario)
+    private async Task GuardarConfiguracionAsync(UsuarioDto usuario)
     {
+        var idUsuario = usuario.IdUsuario;
         mensajeExito = null;
         mensajeError = null;
-        guardandoEspId = idUsuario;
+
+        if (!rolesSeleccionados.TryGetValue(idUsuario, out var idRol) || !EsRolAsignable(idRol))
+        {
+            mensajeError = "Selecciona un rol válido.";
+            return;
+        }
+
+        var seleccionadas = ContarEspecializaciones(idUsuario);
+        if (idRol == 2 && seleccionadas == 0)
+        {
+            mensajeError = "Un mecánico debe tener al menos un área de trabajo.";
+            return;
+        }
+
+        guardandoId = idUsuario;
         try
         {
-            var ids = especializacionesSeleccionadas.GetValueOrDefault(idUsuario)?.ToList() ?? [];
-            var (success, error) = await UsuariosService.AsignarEspecializacionesAsync(idUsuario, ids);
-            if (!success)
+            var (rolOk, rolErr) = await UsuariosService.AsignarRolAsync(idUsuario, idRol);
+            if (!rolOk)
             {
-                mensajeError = error;
+                mensajeError = rolErr;
                 return;
             }
 
-            mensajeExito = "Especializaciones guardadas.";
+            if (idRol == 2)
+            {
+                var ids = especializacionesSeleccionadas.GetValueOrDefault(idUsuario)?.ToList() ?? [];
+                var (espOk, espErr) = await UsuariosService.AsignarEspecializacionesAsync(idUsuario, ids);
+                if (!espOk)
+                {
+                    mensajeError = espErr;
+                    return;
+                }
+            }
+
+            mensajeExito = "Cambios guardados correctamente.";
+            dropdownEspAbiertoId = null;
             await CargarUsuariosAsync();
         }
         finally
         {
-            guardandoEspId = null;
+            guardandoId = null;
         }
     }
 
@@ -622,36 +718,6 @@
         }
     }
 
-    private async Task AsignarRolAsync(int idUsuario)
-    {
-        mensajeExito = null;
-        mensajeError = null;
-
-        if (!rolesSeleccionados.TryGetValue(idUsuario, out var idRol) || !EsRolAsignable(idRol))
-        {
-            mensajeError = "Selecciona un rol válido en la lista.";
-            return;
-        }
-
-        asignandoId = idUsuario;
-        try
-        {
-            var (success, error) = await UsuariosService.AsignarRolAsync(idUsuario, idRol);
-            if (!success)
-            {
-                mensajeError = error;
-                return;
-            }
-
-            mensajeExito = "Rol guardado correctamente.";
-            await CargarUsuariosAsync();
-        }
-        finally
-        {
-            asignandoId = null;
-        }
-    }
-
     private void OnRolSeleccionadoChanged(int idUsuario, ChangeEventArgs e)
     {
         if (e.Value is null)
@@ -663,6 +729,8 @@
         if (int.TryParse(Convert.ToString(e.Value, CultureInfo.InvariantCulture), NumberStyles.Integer, CultureInfo.InvariantCulture, out var idRol))
         {
             rolesSeleccionados[idUsuario] = idRol;
+            if (idRol != 2)
+                CerrarEspDropdown();
         }
     }
 }

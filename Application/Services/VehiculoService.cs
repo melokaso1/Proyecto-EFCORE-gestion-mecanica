@@ -81,7 +81,7 @@ public class VehiculoService(IUnitOfWork uow, IMapper mapper) : IVehiculoService
         return vehiculo is null ? null : mapper.Map<VehiculoDto>(vehiculo);
     }
 
-    public async Task<PagedResultDto<VehiculoDto>> ListarAsync(int page, int size, int? idCliente, string? vin)
+    public async Task<PagedResultDto<VehiculoDto>> ListarAsync(int page, int size, int? idCliente, string? vin, string? placa)
     {
         HashSet<int>? idsVehiculosCliente = null;
         if (idCliente is not null)
@@ -91,8 +91,11 @@ public class VehiculoService(IUnitOfWork uow, IMapper mapper) : IVehiculoService
             idsVehiculosCliente = historiales.Select(h => h.IdVehiculo).ToHashSet();
         }
 
+        var placaNorm = string.IsNullOrWhiteSpace(placa) ? null : placa.Trim().ToUpperInvariant();
+
         var (items, total) = await uow.Vehiculos.GetPagedAsync(page, size, v =>
             (vin == null || v.VIN.Contains(vin)) &&
+            (placaNorm == null || v.Placa.Contains(placaNorm)) &&
             (idsVehiculosCliente == null || idsVehiculosCliente.Contains(v.IdVehiculo)));
 
         return new PagedResultDto<VehiculoDto>

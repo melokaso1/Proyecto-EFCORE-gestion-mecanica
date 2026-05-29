@@ -12,6 +12,20 @@ namespace Api.Controllers;
 [Authorize(Roles = "Admin,Recepcionista")]
 public class CajaController(ICajaService caja) : ControllerBase
 {
+    [HttpGet("ordenes-pendientes")]
+    public async Task<ActionResult<IReadOnlyList<OrdenPendientePagoDto>>> ListarOrdenesPendientes()
+    {
+        var items = await caja.ListarOrdenesPendientesPagoAsync();
+        return Ok(items);
+    }
+
+    [HttpGet("pagos")]
+    public async Task<ActionResult<IReadOnlyList<PagoDto>>> ListarPagosRecientes([FromQuery] int limit = 20)
+    {
+        var items = await caja.ListarPagosRecientesAsync(limit);
+        return Ok(items);
+    }
+
     [HttpPost("pagos")]
     public async Task<ActionResult<PagoYFacturaDto>> RegistrarPago([FromBody] RegistrarPagoDto dto)
     {

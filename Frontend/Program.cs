@@ -35,6 +35,7 @@ builder.Services.AddScoped<IClientePortalService, ClientePortalService>();
 builder.Services.AddScoped<IDiagnosticoClientService, DiagnosticoClientService>();
 builder.Services.AddScoped<ICajaClientService, CajaClientService>();
 builder.Services.AddScoped<ICasosService, CasosService>();
+builder.Services.AddScoped<ICatalogoClientService, CatalogoClientService>();
 
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 

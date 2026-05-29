@@ -328,8 +328,8 @@
             Apellidos = cliente.Apellidos,
             Correo = cliente.CorreoPrincipal,
             Telefono = cliente.TelefonoPrincipal,
-            NumeroDocumento = string.Empty,
-            IdTipoDocumento = tiposDocumento[0].Id
+            NumeroDocumento = cliente.NumeroDocumento,
+            IdTipoDocumento = cliente.IdTipoDocumento > 0 ? cliente.IdTipoDocumento : tiposDocumento[0].Id
         };
         erroresValidacion.Clear();
         formularioVisible = true;
@@ -383,6 +383,11 @@
 
             formularioVisible = false;
             mensajeExito = modoEdicion ? "Cliente actualizado correctamente." : "Cliente creado correctamente.";
+            if (!modoEdicion)
+            {
+                filtro = null;
+                PageNumber = 1;
+            }
             await LoadClientesAsync();
         }
         catch (HttpRequestException ex) when (ex.Message.Contains("órdenes", StringComparison.OrdinalIgnoreCase)

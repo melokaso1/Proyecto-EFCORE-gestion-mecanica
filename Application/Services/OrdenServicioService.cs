@@ -160,7 +160,7 @@ public class OrdenServicioService(
 
     public async Task<SeguimientoOrdenDto?> ConsultarSeguimientoAsync(
         string documento,
-        string? vin,
+        string? placa,
         int? codigoOrden)
     {
         if (string.IsNullOrWhiteSpace(documento))
@@ -188,9 +188,9 @@ public class OrdenServicioService(
             if (orden.IdCliente != cliente.IdCliente)
                 return null;
         }
-        else if (!string.IsNullOrWhiteSpace(vin))
+        else if (!string.IsNullOrWhiteSpace(placa))
         {
-            var vehiculo = await uow.Vehiculos.ObtenerPorVinAsync(vin.Trim());
+            var vehiculo = await uow.Vehiculos.ObtenerPorPlacaAsync(placa.Trim());
             if (vehiculo is null)
                 return null;
 
@@ -211,7 +211,7 @@ public class OrdenServicioService(
         {
             IdOrdenServicio = orden.IdOrdenServicio,
             Estado = orden.EstadoOrden?.Nombre ?? string.Empty,
-            VIN = orden.Vehiculo?.VIN ?? string.Empty,
+            Placa = orden.Vehiculo?.Placa ?? string.Empty,
             MarcaModelo = orden.Vehiculo?.Modelo == null
                 ? string.Empty
                 : $"{orden.Vehiculo.Modelo.Marca?.NombreMarca} {orden.Vehiculo.Modelo.NombreModelo}".Trim(),

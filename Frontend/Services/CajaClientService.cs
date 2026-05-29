@@ -5,6 +5,8 @@ namespace Frontend.Services;
 
 public interface ICajaClientService
 {
+    Task<IReadOnlyList<OrdenPendientePagoDto>> ListarOrdenesPendientesAsync();
+    Task<IReadOnlyList<PagoDto>> ListarPagosRecientesAsync(int limit = 20);
     Task<PagoYFacturaDto> RegistrarPagoAsync(RegistrarPagoDto dto);
 }
 
@@ -15,6 +17,24 @@ public class CajaClientService(HttpClient http, AuthService auth) : ICajaClientS
         PropertyNameCaseInsensitive = true
     };
 
+    public async Task<IReadOnlyList<OrdenPendientePagoDto>> ListarOrdenesPendientesAsync()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/caja/ordenes-pendientes");
+        auth.ApplyAuthorization(request);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessOrThrowAsync(response);
+        return await response.Content.ReadFromJsonAsync<List<OrdenPendientePagoDto>>(JsonOptions) ?? [];
+    }
+
+    public async Task<IReadOnlyList<PagoDto>> ListarPagosRecientesAsync(int limit = 20)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/caja/pagos?limit={limit}");
+        auth.ApplyAuthorization(request);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessOrThrowAsync(response);
+        return await response.Content.ReadFromJsonAsync<List<PagoDto>>(JsonOptions) ?? [];
+    }
+
     public async Task<PagoYFacturaDto> RegistrarPagoAsync(RegistrarPagoDto dto)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "api/caja/pagos");
@@ -22,9 +42,39 @@ public class CajaClientService(HttpClient http, AuthService auth) : ICajaClientS
         auth.ApplyAuthorization(request);
 
         using var response = await http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response);
         return (await response.Content.ReadFromJsonAsync<PagoYFacturaDto>(JsonOptions))!;
     }
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var body = await response.Content.ReadAsStringAsync();
+        string message;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            message = doc.RootElement.TryGetProperty("message", out var m)
+                ? m.GetString() ?? response.ReasonPhrase ?? "Error"
+                : response.ReasonPhrase ?? "Error";
+        }
+        catch
+        {
+            message = response.ReasonPhrase ?? "Error";
+        }
+
+        throw new InvalidOperationException(message);
+    }
+}
+
+public class OrdenPendientePagoDto
+{
+    public int IdOrdenServicio { get; set; }
+    public string ClienteNombre { get; set; } = string.Empty;
+    public string Placa { get; set; } = string.Empty;
+    public decimal TotalEstimado { get; set; }
 }
 
 public class RegistrarPagoDto
@@ -70,4 +120,3 @@ public class PagoYFacturaDto
     public PagoDto Pago { get; set; } = new();
     public FacturaDto? Factura { get; set; }
 }
-

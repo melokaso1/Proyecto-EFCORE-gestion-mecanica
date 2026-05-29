@@ -8,6 +8,7 @@ public interface ICasosService
 {
     Task<CasoRecepcionDto> IniciarAsync();
     Task<List<CasoRecepcionDto>> ListarEnRegistroAsync(int page = 1, int size = 20);
+    Task<List<CasoRecepcionDto>> ListarAsync(string estado = "En registro", int page = 1, int size = 20);
     Task<CasoRecepcionDto?> ObtenerAsync(int id);
     Task<ClienteBusquedaDto?> BuscarClienteAsync(string documento);
     Task<VehiculoBusquedaDto?> BuscarVehiculoPorPlacaAsync(string placa);
@@ -37,10 +38,13 @@ public class CasosService(HttpClient http, AuthService auth) : ICasosService
         return (await response.Content.ReadFromJsonAsync<CasoRecepcionDto>(JsonOptions))!;
     }
 
-    public async Task<List<CasoRecepcionDto>> ListarEnRegistroAsync(int page = 1, int size = 20)
+    public Task<List<CasoRecepcionDto>> ListarEnRegistroAsync(int page = 1, int size = 20) =>
+        ListarAsync("En registro", page, size);
+
+    public async Task<List<CasoRecepcionDto>> ListarAsync(string estado = "En registro", int page = 1, int size = 20)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get,
-            $"api/casos?pageNumber={page}&pageSize={size}");
+            $"api/casos?pageNumber={page}&pageSize={size}&estado={Uri.EscapeDataString(estado)}");
         auth.ApplyAuthorization(request);
         using var response = await http.SendAsync(request);
         response.EnsureSuccessStatusCode();

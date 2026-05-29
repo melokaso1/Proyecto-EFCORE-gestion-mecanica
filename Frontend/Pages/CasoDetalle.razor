@@ -23,9 +23,9 @@
     {
         <div class="h-40 animate-pulse rounded-2xl bg-slate-200/80"></div>
     }
-    else if (!string.IsNullOrWhiteSpace(_error))
+    else if (_caso is null && !string.IsNullOrWhiteSpace(_errorFatal))
     {
-        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_error</div>
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_errorFatal</div>
     }
     else if (_caso is null)
     {
@@ -41,6 +41,11 @@
     }
     else
     {
+        @if (!string.IsNullOrWhiteSpace(_errorFatal))
+        {
+            <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_errorFatal</div>
+        }
+
         <nav class="flex gap-2">
             @foreach (var (label, idx) in _steps.Select((s, i) => (s, i)))
             {
@@ -81,6 +86,18 @@
                             Buscar
                         </button>
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_avisoPaso) && _step == 0)
+                    {
+                        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <span>@_avisoPaso</span>
+                            <button type="button"
+                                    class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-900 hover:bg-amber-200"
+                                    @onclick="ReintentarBusquedaCliente">
+                                Intentar de nuevo
+                            </button>
+                        </div>
+                    }
 
                     @if (_clienteEncontrado is not null)
                     {
@@ -161,6 +178,18 @@
                             Buscar VIN
                         </button>
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_avisoPaso) && _step == 1)
+                    {
+                        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <span>@_avisoPaso</span>
+                            <button type="button"
+                                    class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-900 hover:bg-amber-200"
+                                    @onclick="ReintentarBusquedaVehiculo">
+                                Intentar de nuevo
+                            </button>
+                        </div>
+                    }
 
                     @if (_vehiculoEncontrado is not null)
                     {
@@ -286,7 +315,8 @@
     private bool _saving;
     private bool _confirmado;
     private int _step;
-    private string? _error;
+    private string? _errorFatal;
+    private string? _avisoPaso;
     private CasoRecepcionDto? _caso;
 
     private string _docBusqueda = "";
@@ -330,7 +360,7 @@
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            _errorFatal = ex.Message;
         }
         finally
         {
@@ -338,18 +368,33 @@
         }
     }
 
+    private void ReintentarBusquedaCliente()
+    {
+        _avisoPaso = null;
+        _docBusqueda = string.Empty;
+        _clienteEncontrado = null;
+    }
+
+    private void ReintentarBusquedaVehiculo()
+    {
+        _avisoPaso = null;
+        _placaBusqueda = string.Empty;
+        _vinBusqueda = string.Empty;
+        _vehiculoEncontrado = null;
+    }
+
     private async Task BuscarClienteAsync()
     {
         _saving = true;
-        _error = null;
+        _avisoPaso = null;
         _clienteEncontrado = null;
         try
         {
             _clienteEncontrado = await CasosService.BuscarClienteAsync(_docBusqueda.Trim());
             if (_clienteEncontrado is null)
-                _error = "No se encontró cliente con ese documento.";
+                _avisoPaso = "No se encontró cliente con ese documento.";
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex) { _avisoPaso = ex.Message; }
         finally { _saving = false; }
     }
 
@@ -365,43 +410,44 @@
     private async Task AsignarClienteInternalAsync(AsignarClienteCasoDto dto)
     {
         _saving = true;
-        _error = null;
+        _avisoPaso = null;
+        _errorFatal = null;
         try
         {
             _caso = await CasosService.AsignarClienteAsync(Id, dto);
             _clienteEncontrado = null;
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex) { _avisoPaso = ex.Message; }
         finally { _saving = false; }
     }
 
     private async Task BuscarPorPlacaAsync()
     {
         _saving = true;
-        _error = null;
+        _avisoPaso = null;
         _vehiculoEncontrado = null;
         try
         {
             _vehiculoEncontrado = await CasosService.BuscarVehiculoPorPlacaAsync(_placaBusqueda.Trim());
             if (_vehiculoEncontrado is null)
-                _error = "No se encontró vehículo con esa placa.";
+                _avisoPaso = "No se encontró vehículo con esa placa.";
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex) { _avisoPaso = ex.Message; }
         finally { _saving = false; }
     }
 
     private async Task BuscarPorVinAsync()
     {
         _saving = true;
-        _error = null;
+        _avisoPaso = null;
         _vehiculoEncontrado = null;
         try
         {
             _vehiculoEncontrado = await CasosService.BuscarVehiculoPorVinAsync(_vinBusqueda.Trim());
             if (_vehiculoEncontrado is null)
-                _error = "No se encontró vehículo con ese VIN.";
+                _avisoPaso = "No se encontró vehículo con ese VIN.";
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex) { _avisoPaso = ex.Message; }
         finally { _saving = false; }
     }
 
@@ -417,26 +463,27 @@
     private async Task AsignarVehiculoInternalAsync(AsignarVehiculoCasoDto dto)
     {
         _saving = true;
-        _error = null;
+        _avisoPaso = null;
+        _errorFatal = null;
         try
         {
             _caso = await CasosService.AsignarVehiculoAsync(Id, dto);
             _vehiculoEncontrado = null;
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex) { _avisoPaso = ex.Message; }
         finally { _saving = false; }
     }
 
     private async Task ConfirmarAsync()
     {
         _saving = true;
-        _error = null;
+        _errorFatal = null;
         try
         {
             _caso = await CasosService.ConfirmarAsync(Id, _confirmar);
             _confirmado = true;
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex) { _errorFatal = ex.Message; }
         finally { _saving = false; }
     }
 
@@ -448,6 +495,6 @@
             await CasosService.CancelarAsync(Id);
             Navigation.NavigateTo("/casos");
         }
-        catch (Exception ex) { _error = ex.Message; _saving = false; }
+        catch (Exception ex) { _errorFatal = ex.Message; _saving = false; }
     }
 }

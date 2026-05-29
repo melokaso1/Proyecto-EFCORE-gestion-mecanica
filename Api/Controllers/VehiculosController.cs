@@ -19,9 +19,10 @@ public class VehiculosController(IVehiculoService vehiculoService) : ControllerB
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] int? idCliente = null,
-        [FromQuery] string? vin = null)
+        [FromQuery] string? vin = null,
+        [FromQuery] string? placa = null)
     {
-        var result = await vehiculoService.ListarAsync(pageNumber, pageSize, idCliente, vin);
+        var result = await vehiculoService.ListarAsync(pageNumber, pageSize, idCliente, vin, placa);
         PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
 
         // #region agent log
@@ -59,6 +60,26 @@ public class VehiculosController(IVehiculoService vehiculoService) : ControllerB
     {
         var vehiculo = await vehiculoService.ObtenerPorVinAsync(vin);
         return vehiculo is null ? NotFound() : Ok(vehiculo);
+    }
+
+    /// <summary>Registra un vehículo en catálogo sin asignar propietario.</summary>
+    [HttpPost("catalogo")]
+    [Authorize(Roles = "Admin,Recepcionista")]
+    public async Task<ActionResult<VehiculoDto>> CrearEnCatalogo([FromBody] CreateVehiculoCasoDto dto)
+    {
+        try
+        {
+            var vehiculo = await vehiculoService.CrearEnCatalogoAsync(dto);
+            return CreatedAtAction(nameof(Obtener), new { id = vehiculo.IdVehiculo }, vehiculo);
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     /// <summary>Registra un nuevo vehículo.</summary>

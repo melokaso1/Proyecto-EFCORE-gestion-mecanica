@@ -19,6 +19,16 @@ public class OrdenesService(HttpClient http, AuthService auth) : IOrdenesService
         GetPagedAsync($"api/ordenesservicio?pageNumber={page}&pageSize={size}" +
                       (estado is null ? "" : $"&estado={Uri.EscapeDataString(estado)}"));
 
+    public async Task<OrdenServicioDto?> GetOrdenAsync(int idOrdenServicio)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/ordenesservicio/{idOrdenServicio}");
+        auth.ApplyAuthorization(request);
+        using var response = await http.SendAsync(request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<OrdenServicioDto>(JsonOptions)
+            : null;
+    }
+
     private async Task<PagedOrdenesResult> GetPagedAsync(string url)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -45,13 +55,13 @@ public class SeguimientoService(HttpClient http) : ISeguimientoService
     };
 
     public async Task<(SeguimientoOrdenDto? Resultado, string? Error)> ConsultarAsync(
-        string documento, string? vin, int? codigoOrden)
+        string documento, string? placa, int? codigoOrden)
     {
         try
         {
             var query = $"api/seguimiento?documento={Uri.EscapeDataString(documento.Trim())}";
-            if (!string.IsNullOrWhiteSpace(vin))
-                query += $"&vin={Uri.EscapeDataString(vin.Trim())}";
+            if (!string.IsNullOrWhiteSpace(placa))
+                query += $"&placa={Uri.EscapeDataString(placa.Trim())}";
             if (codigoOrden is not null)
                 query += $"&codigoOrden={codigoOrden}";
 
@@ -63,7 +73,7 @@ public class SeguimientoService(HttpClient http) : ISeguimientoService
             }
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                return (null, "No se encontró información con esos datos. Verifica documento y VIN o número de orden.");
+                return (null, "No se encontró información con esos datos. Verifica documento y placa o número de orden.");
 
             var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>(JsonOptions);
             return (null, error?.Message ?? "No se pudo consultar el seguimiento.");

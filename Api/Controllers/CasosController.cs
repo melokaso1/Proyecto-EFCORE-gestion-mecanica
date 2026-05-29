@@ -25,11 +25,19 @@ public class CasosController(ICasoRecepcionService casoService) : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CasoRecepcionDto>>> ListarEnRegistro(
+    public async Task<ActionResult<IEnumerable<CasoRecepcionDto>>> Listar(
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? estado = null)
     {
-        var result = await casoService.ListarCasosEnRegistroAsync(pageNumber, pageSize);
+        string? estadoFiltro = estado?.Trim() switch
+        {
+            null or "" or "En registro" => Domain.Constants.EstadosOrden.EnRegistro,
+            "todos" => null,
+            _ => estado!.Trim()
+        };
+
+        var result = await casoService.ListarCasosAsync(pageNumber, pageSize, estadoFiltro);
         PaginationHelper.AddPaginationHeader(Response, result.TotalCount, pageNumber, pageSize);
         return Ok(result.Items);
     }

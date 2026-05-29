@@ -22,7 +22,7 @@ public class SeguimientoOrdenDto
 {
     public int IdOrdenServicio { get; set; }
     public string Estado { get; set; } = string.Empty;
-    public string VIN { get; set; } = string.Empty;
+    public string Placa { get; set; } = string.Empty;
     public string MarcaModelo { get; set; } = string.Empty;
     public int Anio { get; set; }
     public string TipoServicio { get; set; } = string.Empty;

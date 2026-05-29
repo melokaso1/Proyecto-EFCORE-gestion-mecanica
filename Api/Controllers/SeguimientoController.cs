@@ -12,22 +12,22 @@ public class SeguimientoController(IOrdenServicioService ordenServicioService) :
 {
     /// <summary>
     /// Consulta el estado de una orden validando documento del cliente
-    /// junto con VIN del vehículo o número de orden.
+    /// junto con placa del vehículo o número de orden.
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<SeguimientoOrdenDto>> Consultar(
         [FromQuery] string documento,
-        [FromQuery] string? vin = null,
+        [FromQuery] string? placa = null,
         [FromQuery] int? codigoOrden = null)
     {
         if (string.IsNullOrWhiteSpace(documento))
             return BadRequest(new { message = "El documento del cliente es obligatorio." });
 
-        if (string.IsNullOrWhiteSpace(vin) && codigoOrden is null)
-            return BadRequest(new { message = "Indica el VIN del vehículo o el número de orden." });
+        if (string.IsNullOrWhiteSpace(placa) && codigoOrden is null)
+            return BadRequest(new { message = "Indica la placa del vehículo o el número de orden." });
 
-        var resultado = await ordenServicioService.ConsultarSeguimientoAsync(documento, vin, codigoOrden);
+        var resultado = await ordenServicioService.ConsultarSeguimientoAsync(documento, placa, codigoOrden);
         return resultado is null ? NotFound(new { message = "No se encontró información con esos datos." }) : Ok(resultado);
     }
 }

@@ -69,7 +69,6 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             uow.DiagnosticosOrden.Update(diag);
         }
 
-        await OrdenEstadoSync.SincronizarTrasDiagnosticoAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -80,6 +79,33 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             esCreacion ? "Diagnóstico registrado" : "Diagnóstico actualizado");
 
         return mapper.Map<DiagnosticoDto>(diag);
+    }
+
+    public async Task IniciarDiagnosticoAsync(int idOrdenServicio, int idMecanico)
+    {
+        var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
+            ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
+
+        if (orden.IdMecanico != idMecanico)
+            throw new BusinessRuleException("Solo el mecánico asignado puede iniciar el diagnóstico.");
+
+        if (!await uow.Usuarios.TieneEspecializacionPorCodigoAsync(idMecanico, EspecializacionesMecanico.Diagnostico))
+            throw new BusinessRuleException("Solo un mecánico con especialización en Diagnóstico puede iniciar el diagnóstico.");
+
+        var estadoNombre = (await uow.EstadosOrden.GetByIdAsync(orden.IdEstadoOrden))?.Nombre ?? string.Empty;
+        if (estadoNombre is not (EstadosOrden.Recibido or EstadosOrden.Pendiente))
+            throw new BusinessRuleException(
+                "Solo se puede iniciar el diagnóstico cuando la orden está en estado Recibido.");
+
+        await OrdenEstadoSync.SincronizarTrasIniciarDiagnosticoAsync(uow, orden);
+        await uow.CommitAsync();
+
+        await auditoria.RegistrarAsync(
+            idMecanico,
+            "Actualización",
+            nameof(OrdenServicio),
+            idOrdenServicio,
+            "Diagnóstico iniciado — revisión en curso");
     }
 
     public async Task<IReadOnlyList<ReparacionItemDto>> ListarReparacionesAsync(int idOrdenServicio)

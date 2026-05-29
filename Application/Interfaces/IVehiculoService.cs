@@ -6,7 +6,7 @@ public interface IVehiculoService
 {
     Task<VehiculoDto> CrearAsync(CreateVehiculoDto dto);
     Task<VehiculoDto> CrearEnCatalogoAsync(CreateVehiculoCasoDto dto);
-    Task<PagedResultDto<VehiculoDto>> ListarAsync(int page, int size, int? idCliente, string? vin);
+    Task<PagedResultDto<VehiculoDto>> ListarAsync(int page, int size, int? idCliente, string? vin, string? placa);
     Task<VehiculoDto?> ObtenerPorVinAsync(string vin);
     Task<VehiculoDto?> ObtenerPorPlacaAsync(string placa);
     Task<VehiculoDto?> ObtenerPorIdAsync(int id);

@@ -14,7 +14,9 @@ public class ClienteMappingConfig : IRegister
         config.NewConfig<Cliente, ClienteDto>()
             .Map(dest => dest.Persona, src => src.Persona)
             .Map(dest => dest.CorreoPrincipal, src => BuildCorreoPrincipal(src))
-            .Map(dest => dest.TelefonoPrincipal, src => BuildTelefonoPrincipal(src));
+            .Map(dest => dest.TelefonoPrincipal, src => BuildTelefonoPrincipal(src))
+            .Map(dest => dest.NumeroDocumento, _ => string.Empty)
+            .Map(dest => dest.IdTipoDocumento, _ => 0);
 
         config.NewConfig<CreateClienteDto, Persona>()
             .Map(dest => dest.Nombres, src => src.Nombres)

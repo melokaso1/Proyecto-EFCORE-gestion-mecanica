@@ -6,6 +6,8 @@ public class ClienteDto
     public PersonaDto Persona { get; set; } = null!;
     public string CorreoPrincipal { get; set; } = string.Empty;
     public string TelefonoPrincipal { get; set; } = string.Empty;
+    public string NumeroDocumento { get; set; } = string.Empty;
+    public int IdTipoDocumento { get; set; }
     public bool Estado { get; set; }
 }
 

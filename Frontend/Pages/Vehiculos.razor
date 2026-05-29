@@ -2,6 +2,7 @@
 @layout MainLayout
 @attribute [Authorize]
 @inject IVehiculosService VehiculosService
+@inject ICasosService CasosService
 
 <PageTitle>Vehículos — Mecánicas Jholversito</PageTitle>
 
@@ -9,23 +10,44 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Vehículos</h1>
-            <p class="text-sm text-slate-500 mt-1">Listado del parque registrado. Filtra por VIN (contiene).</p>
+            <p class="text-sm text-slate-500 mt-1">Listado del parque registrado. Busca por VIN o placa.</p>
         </div>
-        <AuthorizeView Roles="Admin">
-            <a href="/admin"
-               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                Volver al panel admin
-            </a>
-        </AuthorizeView>
+        <div class="flex flex-wrap gap-2">
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <button type="button"
+                        class="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        @onclick="AbrirRegistro">
+                    Registrar vehículo
+                </button>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin">
+                <a href="/admin"
+                   class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Volver al panel admin
+                </a>
+            </AuthorizeView>
+        </div>
     </div>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div class="flex rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1 sm:w-56">
+            <button type="button"
+                    class="flex-1 rounded-lg py-2 text-sm font-medium transition @(modoPlaca ? "bg-red-600 text-white" : "text-slate-600")"
+                    @onclick="() => modoPlaca = true">
+                Placa
+            </button>
+            <button type="button"
+                    class="flex-1 rounded-lg py-2 text-sm font-medium transition @(!modoPlaca ? "bg-red-600 text-white" : "text-slate-600")"
+                    @onclick="() => modoPlaca = false">
+                VIN
+            </button>
+        </div>
         <div class="flex-1">
-            <label class="block text-xs font-medium text-slate-500 mb-1">VIN</label>
+            <label class="block text-xs font-medium text-slate-500 mb-1">@(modoPlaca ? "Placa" : "VIN")</label>
             <input type="text"
-                   @bind="filtroVin"
+                   @bind="filtroTexto"
                    @bind:event="oninput"
-                   placeholder="Ej. 1HGBH41JXMN109186"
+                   placeholder="@(modoPlaca ? "Ej. ABC123" : "Ej. 1HGBH41JXMN109186")"
                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
         </div>
         <button type="button"
@@ -38,6 +60,43 @@
     @if (!string.IsNullOrWhiteSpace(mensajeError))
     {
         <div class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">@mensajeError</div>
+    }
+
+    @if (mostrarRegistro)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-800">Registrar vehículo</h2>
+                <button type="button" class="text-sm text-slate-500 hover:text-slate-700" @onclick="CerrarRegistro">Cerrar</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(mensajeRegistro))
+            {
+                <div class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">@mensajeRegistro</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(errorRegistro))
+            {
+                <div class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">@errorRegistro</div>
+            }
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select class="sm:col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="nuevoVehiculo.IdModelo">
+                    <option value="0">Selecciona modelo…</option>
+                    @foreach (var m in modelos)
+                    {
+                        <option value="@m.IdModelo">@m.Marca @m.Modelo (@m.TipoVehiculo)</option>
+                    }
+                </select>
+                <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm uppercase" placeholder="Placa" @bind="nuevoVehiculo.Placa" />
+                <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono" placeholder="VIN (opcional)" @bind="nuevoVehiculo.VIN" />
+                <input type="number" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Año" @bind="nuevoVehiculo.Anio" />
+                <input type="number" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Kilometraje" @bind="nuevoVehiculo.Kilometraje" />
+            </div>
+            <button type="button"
+                    class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                    disabled="@guardandoRegistro"
+                    @onclick="RegistrarAsync">
+                @(guardandoRegistro ? "Guardando…" : "Guardar vehículo")
+            </button>
+        </div>
     }
 
     @if (cargando)
@@ -111,22 +170,94 @@
 @code {
     private const int pageSize = 15;
     private List<VehiculoListDto> items = [];
+    private List<ModeloVehiculoCatalogoDto> modelos = [];
     private int totalCount;
     private int pageNumber = 1;
-    private string filtroVin = string.Empty;
+    private string filtroTexto = string.Empty;
     private string? vinAplicado;
+    private string? placaAplicada;
+    private bool modoPlaca = true;
     private bool cargando = true;
     private string? mensajeError;
+    private bool mostrarRegistro;
+    private bool guardandoRegistro;
+    private string? mensajeRegistro;
+    private string? errorRegistro;
+    private CreateVehiculoCasoDto nuevoVehiculo = new();
 
     protected override async Task OnInitializedAsync()
     {
         await CargarAsync();
     }
 
+    private async Task AbrirRegistro()
+    {
+        mostrarRegistro = true;
+        mensajeRegistro = null;
+        errorRegistro = null;
+        nuevoVehiculo = new CreateVehiculoCasoDto { Anio = DateTime.Now.Year };
+        if (modelos.Count == 0)
+            modelos = await CasosService.ModelosVehiculoAsync();
+    }
+
+    private void CerrarRegistro()
+    {
+        mostrarRegistro = false;
+        errorRegistro = null;
+        mensajeRegistro = null;
+    }
+
+    private async Task RegistrarAsync()
+    {
+        errorRegistro = null;
+        mensajeRegistro = null;
+
+        if (nuevoVehiculo.IdModelo <= 0)
+        {
+            errorRegistro = "Selecciona un modelo del catálogo.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(nuevoVehiculo.Placa))
+        {
+            errorRegistro = "La placa es obligatoria.";
+            return;
+        }
+
+        guardandoRegistro = true;
+        try
+        {
+            await VehiculosService.RegistrarEnCatalogoAsync(nuevoVehiculo);
+            mensajeRegistro = "Vehículo registrado correctamente.";
+            nuevoVehiculo = new CreateVehiculoCasoDto { Anio = DateTime.Now.Year };
+            pageNumber = 1;
+            placaAplicada = null;
+            vinAplicado = null;
+            filtroTexto = string.Empty;
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            errorRegistro = ex.Message;
+        }
+        finally
+        {
+            guardandoRegistro = false;
+        }
+    }
+
     private async Task BuscarAsync()
     {
         pageNumber = 1;
-        vinAplicado = string.IsNullOrWhiteSpace(filtroVin) ? null : filtroVin.Trim();
+        if (modoPlaca)
+        {
+            placaAplicada = string.IsNullOrWhiteSpace(filtroTexto) ? null : filtroTexto.Trim().ToUpperInvariant();
+            vinAplicado = null;
+        }
+        else
+        {
+            vinAplicado = string.IsNullOrWhiteSpace(filtroTexto) ? null : filtroTexto.Trim();
+            placaAplicada = null;
+        }
         await CargarAsync();
     }
 
@@ -150,7 +281,7 @@
         mensajeError = null;
         try
         {
-            var result = await VehiculosService.GetVehiculosAsync(pageNumber, pageSize, vinAplicado);
+            var result = await VehiculosService.GetVehiculosAsync(pageNumber, pageSize, vinAplicado, placaAplicada);
             items = result.Items;
             totalCount = result.TotalCount;
         }

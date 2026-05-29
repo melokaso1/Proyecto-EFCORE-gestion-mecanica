@@ -5,11 +5,11 @@
 
 <PageTitle>Caja — Pagos</PageTitle>
 
-<div class="max-w-3xl mx-auto space-y-6 pb-10">
+<div class="max-w-5xl mx-auto space-y-6 pb-10">
     <header class="border-b border-slate-200 pb-6">
         <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Caja</p>
         <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Registrar pago</h1>
-        <p class="text-sm text-slate-600 mt-2">Registra el pago y genera la factura de la orden.</p>
+        <p class="text-sm text-slate-600 mt-2">Selecciona una orden pendiente de pago o ingresa los datos manualmente.</p>
     </header>
 
     @if (!string.IsNullOrWhiteSpace(_error))
@@ -20,6 +20,46 @@
     {
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">@_success</div>
     }
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
+        <h2 class="text-lg font-bold text-slate-900">Órdenes pendientes de pago</h2>
+        @if (_loadingPendientes)
+        {
+            <p class="text-sm text-slate-500">Cargando órdenes…</p>
+        }
+        else if (_pendientes.Count == 0)
+        {
+            <p class="text-sm text-slate-500">No hay órdenes en estado «Pendiente de pago».</p>
+        }
+        else
+        {
+            <div class="overflow-hidden rounded-xl border border-slate-200">
+                <table class="min-w-full text-sm bg-white">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-4 py-3">Orden</th>
+                            <th class="px-4 py-3">Cliente</th>
+                            <th class="px-4 py-3">Placa</th>
+                            <th class="px-4 py-3">Total est.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var o in _pendientes)
+                        {
+                            var selected = _form.IdOrdenServicio == o.IdOrdenServicio;
+                            <tr class="cursor-pointer transition-colors @(selected ? "bg-red-50" : "hover:bg-slate-50")"
+                                @onclick="() => SeleccionarOrden(o)">
+                                <td class="px-4 py-3 font-medium text-slate-900">#@o.IdOrdenServicio</td>
+                                <td class="px-4 py-3 text-slate-700">@o.ClienteNombre</td>
+                                <td class="px-4 py-3 text-slate-700">@o.Placa</td>
+                                <td class="px-4 py-3 text-slate-700">@o.TotalEstimado.ToString("C0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 
     <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -99,33 +139,129 @@
             </div>
         </section>
     }
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
+        <h2 class="text-lg font-bold text-slate-900">Pagos recientes</h2>
+        @if (_loadingPagos)
+        {
+            <p class="text-sm text-slate-500">Cargando historial…</p>
+        }
+        else if (_pagosRecientes.Count == 0)
+        {
+            <p class="text-sm text-slate-500">Aún no hay pagos registrados.</p>
+        }
+        else
+        {
+            <div class="overflow-hidden rounded-xl border border-slate-200">
+                <table class="min-w-full text-sm bg-white">
+                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-4 py-3">Fecha</th>
+                            <th class="px-4 py-3">Orden</th>
+                            <th class="px-4 py-3">Método</th>
+                            <th class="px-4 py-3">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var p in _pagosRecientes)
+                        {
+                            <tr>
+                                <td class="px-4 py-3 text-slate-700">@p.FechaPago.ToLocalTime().ToString("g")</td>
+                                <td class="px-4 py-3 text-slate-900">#@p.IdOrdenServicio</td>
+                                <td class="px-4 py-3 text-slate-700 capitalize">@p.Metodo</td>
+                                <td class="px-4 py-3 text-slate-700">@p.Monto.ToString("C0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 </div>
 
 @code {
     private bool _saving;
+    private bool _loadingPendientes = true;
+    private bool _loadingPagos = true;
     private string? _error;
     private string? _success;
     private RegistrarPagoDto _form = new();
     private FacturaDto? _factura;
+    private List<OrdenPendientePagoDto> _pendientes = [];
+    private List<PagoDto> _pagosRecientes = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarListasAsync();
+    }
+
+    private async Task CargarListasAsync()
+    {
+        _loadingPendientes = true;
+        _loadingPagos = true;
+        try
+        {
+            _pendientes = (await CajaService.ListarOrdenesPendientesAsync()).ToList();
+            _pagosRecientes = (await CajaService.ListarPagosRecientesAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _error = ex is InvalidOperationException
+                ? ex.Message
+                : "No se pudieron cargar las órdenes o el historial de pagos.";
+        }
+        finally
+        {
+            _loadingPendientes = false;
+            _loadingPagos = false;
+        }
+    }
+
+    private void SeleccionarOrden(OrdenPendientePagoDto orden)
+    {
+        _form.IdOrdenServicio = orden.IdOrdenServicio;
+        if (orden.TotalEstimado > 0)
+            _form.Monto = orden.TotalEstimado;
+        _error = null;
+    }
 
     private async Task RegistrarAsync()
     {
         if (_saving)
             return;
 
-        _saving = true;
         _error = null;
         _success = null;
         _factura = null;
+
+        if (_form.IdOrdenServicio <= 0)
+        {
+            _error = "Indica un ID de orden válido.";
+            return;
+        }
+
+        if (_form.Monto <= 0)
+        {
+            _error = "El monto debe ser mayor a cero.";
+            return;
+        }
+
+        _saving = true;
         try
         {
             var res = await CajaService.RegistrarPagoAsync(_form);
             _factura = res.Factura;
             _success = $"Pago registrado para la orden #{_form.IdOrdenServicio}.";
+            _form = new RegistrarPagoDto();
+            await CargarListasAsync();
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _error = $"No se pudo registrar el pago. {ex.Message}";
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "No se pudo registrar el pago. Intenta de nuevo.";
         }
         finally
         {
@@ -133,4 +269,3 @@
         }
     }
 }
-

@@ -6,6 +6,7 @@ public interface IDiagnosticoService
 {
     Task<DiagnosticoDto?> ObtenerAsync(int idOrdenServicio);
     Task<DiagnosticoDto> UpsertAsync(int idOrdenServicio, int idMecanico, UpsertDiagnosticoDto dto);
+    Task IniciarDiagnosticoAsync(int idOrdenServicio, int idMecanico);
 
     Task<IReadOnlyList<ReparacionItemDto>> ListarReparacionesAsync(int idOrdenServicio);
     Task<ReparacionItemDto> CrearReparacionAsync(int idOrdenServicio, int idMecanico, CreateReparacionItemDto dto);

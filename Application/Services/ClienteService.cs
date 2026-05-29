@@ -21,7 +21,12 @@ public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
             return null;
 
         var cliente = await uow.Clientes.ObtenerPorDocumentoAsync(numeroDocumento.Trim());
-        return cliente is null ? null : mapper.Map<ClienteDto>(cliente);
+        if (cliente is null)
+            return null;
+
+        var dto = mapper.Map<ClienteDto>(cliente);
+        await EnrichDocumentoAsync(dto, cliente.IdPersona);
+        return dto;
     }
 
     private async Task<ClienteDto> RegistrarClienteInternoAsync(CreateClienteDto dto)
@@ -68,7 +73,10 @@ public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
         await uow.CommitAsync();
 
         cliente.Persona = persona;
-        return mapper.Map<ClienteDto>(cliente);
+        var creado = mapper.Map<ClienteDto>(cliente);
+        creado.NumeroDocumento = dto.NumeroDocumento;
+        creado.IdTipoDocumento = dto.IdTipoDocumento;
+        return creado;
     }
 
     public async Task<PagedResultDto<ClienteDto>> ListarClientesAsync(int page, int size, string? filtro)
@@ -78,9 +86,13 @@ public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
             (c.Persona != null &&
              (c.Persona.Nombres.Contains(filtro) || c.Persona.Apellidos.Contains(filtro))));
 
+        var clientes = items.ToList();
+        var dtos = mapper.Map<List<ClienteDto>>(clientes);
+        await EnrichDocumentosAsync(dtos, clientes);
+
         return new PagedResultDto<ClienteDto>
         {
-            Items = mapper.Map<List<ClienteDto>>(items),
+            Items = dtos,
             TotalCount = total,
             PageNumber = page,
             PageSize = size
@@ -90,7 +102,12 @@ public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
     public async Task<ClienteDto?> ObtenerPorIdAsync(int id)
     {
         var cliente = await uow.Clientes.GetByIdAsync(id);
-        return cliente is null ? null : mapper.Map<ClienteDto>(cliente);
+        if (cliente is null)
+            return null;
+
+        var dto = mapper.Map<ClienteDto>(cliente);
+        await EnrichDocumentoAsync(dto, cliente.IdPersona);
+        return dto;
     }
 
     public async Task ActualizarAsync(int id, CreateClienteDto dto)
@@ -148,5 +165,37 @@ public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
     {
         var partes = correo.Split('@', 2);
         return partes.Length == 2 ? (partes[0], partes[1]) : (correo, "local");
+    }
+
+    private async Task EnrichDocumentosAsync(IReadOnlyList<ClienteDto> dtos, IReadOnlyList<Cliente> clientes)
+    {
+        if (clientes.Count == 0)
+            return;
+
+        var idPersonas = clientes.Select(c => c.IdPersona).Distinct().ToList();
+        var docs = await uow.DocumentosPersona.FindAsync(d => idPersonas.Contains(d.IdPersona));
+        var docByPersona = docs
+            .GroupBy(d => d.IdPersona)
+            .ToDictionary(g => g.Key, g => g.FirstOrDefault(d => d.EsPrincipal) ?? g.First());
+
+        for (var i = 0; i < dtos.Count; i++)
+        {
+            if (docByPersona.TryGetValue(clientes[i].IdPersona, out var doc) && doc is not null)
+            {
+                dtos[i].NumeroDocumento = doc.NumeroDocumento;
+                dtos[i].IdTipoDocumento = doc.IdTipoDocumento;
+            }
+        }
+    }
+
+    private async Task EnrichDocumentoAsync(ClienteDto dto, int idPersona)
+    {
+        var docs = await uow.DocumentosPersona.FindAsync(d => d.IdPersona == idPersona);
+        var doc = docs.FirstOrDefault(d => d.EsPrincipal) ?? docs.FirstOrDefault();
+        if (doc is null)
+            return;
+
+        dto.NumeroDocumento = doc.NumeroDocumento;
+        dto.IdTipoDocumento = doc.IdTipoDocumento;
     }
 }

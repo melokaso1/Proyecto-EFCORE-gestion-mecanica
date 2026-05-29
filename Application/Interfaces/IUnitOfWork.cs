@@ -31,5 +31,8 @@ public interface IUnitOfWork
     IGenericRepository<EspecializacionMecanico> EspecializacionesMecanico { get; }
     IGenericRepository<Pago> Pagos { get; }
     IGenericRepository<TipoDocumento> TiposDocumento { get; }
+    IGenericRepository<MarcaVehiculo> MarcasVehiculo { get; }
+    IGenericRepository<ModeloVehiculo> ModelosVehiculo { get; }
+    IGenericRepository<TipoVehiculo> TiposVehiculo { get; }
     Task<int> CommitAsync();
 }

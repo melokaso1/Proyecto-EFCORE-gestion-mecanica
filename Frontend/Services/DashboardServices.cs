@@ -6,12 +6,13 @@ public interface IOrdenesService
 {
     Task<PagedOrdenesResult> GetMisOrdenesAsync(int page = 1, int size = 20, string? estado = null);
     Task<PagedOrdenesResult> GetOrdenesAsync(int page = 1, int size = 20, string? estado = null);
+    Task<OrdenServicioDto?> GetOrdenAsync(int idOrdenServicio);
 }
 
 public interface ISeguimientoService
 {
     Task<(SeguimientoOrdenDto? Resultado, string? Error)> ConsultarAsync(
-        string documento, string? vin, int? codigoOrden);
+        string documento, string? placa, int? codigoOrden);
 }
 
 public interface IDashboardService
