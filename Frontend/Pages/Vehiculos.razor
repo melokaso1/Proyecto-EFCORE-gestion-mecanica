@@ -53,6 +53,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Marca</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Modelo</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Tipo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Placa</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">VIN</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Año</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Km</th>
@@ -62,7 +63,7 @@
                     @if (items.Count == 0)
                     {
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No hay vehículos que coincidan.</td>
+                            <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500">No hay vehículos que coincidan.</td>
                         </tr>
                     }
                     else
@@ -73,6 +74,7 @@
                                 <td class="px-4 py-3 text-sm text-slate-800">@v.Marca</td>
                                 <td class="px-4 py-3 text-sm text-slate-800">@v.Modelo</td>
                                 <td class="px-4 py-3 text-sm text-slate-600">@v.TipoVehiculo</td>
+                                <td class="px-4 py-3 text-sm font-semibold text-slate-800">@v.Placa</td>
                                 <td class="px-4 py-3 text-sm font-mono text-slate-600">@v.VIN</td>
                                 <td class="px-4 py-3 text-sm text-slate-600">@v.Anio</td>
                                 <td class="px-4 py-3 text-sm text-slate-600">@v.Kilometraje.ToString("N0")</td>

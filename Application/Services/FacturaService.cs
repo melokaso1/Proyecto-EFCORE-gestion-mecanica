@@ -105,7 +105,8 @@ public class FacturaService(IUnitOfWork uow, IMapper mapper) : IFacturaService
         {
             var historiales = await uow.HistorialPropietarios.FindAsync(h => h.IdCliente == idCliente);
             var idsVehiculos = historiales.Select(h => h.IdVehiculo).ToHashSet();
-            var ordenes = await uow.OrdenesServicio.FindAsync(o => idsVehiculos.Contains(o.IdVehiculo));
+            var ordenes = await uow.OrdenesServicio.FindAsync(o =>
+                o.IdVehiculo.HasValue && idsVehiculos.Contains(o.IdVehiculo.Value));
             idsOrdenes = ordenes.Select(o => o.IdOrdenServicio).ToHashSet();
         }
 

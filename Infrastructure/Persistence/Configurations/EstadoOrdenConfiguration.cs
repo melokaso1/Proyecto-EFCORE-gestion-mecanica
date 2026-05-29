@@ -31,6 +31,7 @@ public class EstadoOrdenConfiguration : IEntityTypeConfiguration<EstadoOrden>
             new EstadoOrden { IdEstadoOrden = 14, Nombre = EstadosOrden.PendientePago },
             new EstadoOrden { IdEstadoOrden = 15, Nombre = EstadosOrden.Pagado },
             new EstadoOrden { IdEstadoOrden = 16, Nombre = EstadosOrden.Entregado },
-            new EstadoOrden { IdEstadoOrden = 17, Nombre = EstadosOrden.Cerrado });
+            new EstadoOrden { IdEstadoOrden = 17, Nombre = EstadosOrden.Cerrado },
+            new EstadoOrden { IdEstadoOrden = 18, Nombre = EstadosOrden.EnRegistro });
     }
 }

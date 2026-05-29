@@ -78,5 +78,36 @@ public class ClientePortalController(IClientePortalService portalService) : Cont
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>Decisión del cliente por ítems de reparación (parcial/total).</summary>
+    [HttpPatch("ordenes/{idOrdenServicio:int}/reparaciones/decision")]
+    public async Task<ActionResult<IEnumerable<ReparacionItemDto>>> DecidirReparaciones(
+        int idOrdenServicio,
+        [FromBody] ClienteReparacionesDecisionRequest request)
+    {
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+        if (!int.TryParse(idClaim, out var idUsuario))
+            return Unauthorized();
+
+        try
+        {
+            var items = await portalService.DecidirReparacionesAsync(idUsuario, idOrdenServicio, request.Decisiones);
+            return Ok(items);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    public sealed class ClienteReparacionesDecisionRequest
+    {
+        public Dictionary<int, DecisionClienteDto> Decisiones { get; set; } = new();
+    }
 }
 

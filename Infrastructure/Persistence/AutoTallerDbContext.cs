@@ -5,6 +5,7 @@ namespace Infrastructure.Persistence;
 
 public class AutoTallerDbContext(DbContextOptions<AutoTallerDbContext> options) : DbContext(options)
 {
+    public DbSet<EspecializacionMecanico> EspecializacionesMecanico => Set<EspecializacionMecanico>();
     public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
     public DbSet<Persona> Personas => Set<Persona>();
     public DbSet<DocumentoPersona> DocumentosPersona => Set<DocumentoPersona>();

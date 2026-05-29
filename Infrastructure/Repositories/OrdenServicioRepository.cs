@@ -10,6 +10,12 @@ public class OrdenServicioRepository(AutoTallerDbContext context)
 {
     public override async Task<OrdenServicio?> GetByIdAsync(int id) =>
         await Context.OrdenesServicio
+            .Include(o => o.Vehiculo!)
+            .ThenInclude(v => v.Modelo!)
+            .ThenInclude(m => m.Marca)
+            .Include(o => o.Vehiculo!)
+            .ThenInclude(v => v.Modelo!)
+            .ThenInclude(m => m.TipoVehiculo)
             .Include(o => o.Cliente!)
             .ThenInclude(c => c.Persona)
             .Include(o => o.Vehiculo)
@@ -29,6 +35,12 @@ public class OrdenServicioRepository(AutoTallerDbContext context)
         DateTime? hasta)
     {
         var query = Context.OrdenesServicio
+            .Include(o => o.Vehiculo!)
+            .ThenInclude(v => v.Modelo!)
+            .ThenInclude(m => m.Marca)
+            .Include(o => o.Vehiculo!)
+            .ThenInclude(v => v.Modelo!)
+            .ThenInclude(m => m.TipoVehiculo)
             .Include(o => o.Cliente!)
             .ThenInclude(c => c.Persona)
             .Include(o => o.Vehiculo)

@@ -85,7 +85,7 @@ public class OrdenServicioService(
         await uow.CommitAsync();
 
         await auditoriaService.RegistrarAsync(
-            orden.IdMecanico,
+            orden.IdMecanico ?? 0,
             "Actualización",
             nameof(OrdenServicio),
             orden.IdOrdenServicio,
@@ -105,7 +105,7 @@ public class OrdenServicioService(
         await uow.CommitAsync();
 
         await auditoriaService.RegistrarAsync(
-            orden.IdMecanico,
+            orden.IdMecanico ?? 0,
             "Actualización",
             nameof(OrdenServicio),
             orden.IdOrdenServicio,
@@ -241,14 +241,22 @@ public class OrdenServicioService(
 
     private async Task CargarRelacionesOrdenAsync(OrdenServicio orden)
     {
-        orden.Vehiculo ??= await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo);
-        orden.Cliente ??= await uow.Clientes.GetByIdAsync(orden.IdCliente);
-        if (orden.Cliente?.Persona is null && orden.Cliente is not null)
-            orden.Cliente.Persona = await uow.Personas.GetByIdAsync(orden.Cliente.IdPersona);
-        orden.TipoServicio ??= await uow.TiposServicio.GetByIdAsync(orden.IdTipoServicio);
-        orden.Mecanico ??= await uow.Usuarios.GetByIdAsync(orden.IdMecanico);
-        if (orden.Mecanico?.Persona is null && orden.Mecanico is not null)
-            orden.Mecanico.Persona = await uow.Personas.GetByIdAsync(orden.Mecanico.IdPersona);
+        if (orden.IdVehiculo is > 0)
+            orden.Vehiculo ??= await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo.Value);
+        if (orden.IdCliente is > 0)
+        {
+            orden.Cliente ??= await uow.Clientes.GetByIdAsync(orden.IdCliente.Value);
+            if (orden.Cliente?.Persona is null && orden.Cliente is not null)
+                orden.Cliente.Persona = await uow.Personas.GetByIdAsync(orden.Cliente.IdPersona);
+        }
+        if (orden.IdTipoServicio is > 0)
+            orden.TipoServicio ??= await uow.TiposServicio.GetByIdAsync(orden.IdTipoServicio.Value);
+        if (orden.IdMecanico is > 0)
+        {
+            orden.Mecanico ??= await uow.Usuarios.GetByIdAsync(orden.IdMecanico.Value);
+            if (orden.Mecanico?.Persona is null && orden.Mecanico is not null)
+                orden.Mecanico.Persona = await uow.Personas.GetByIdAsync(orden.Mecanico.IdPersona);
+        }
         await CargarEstadoOrdenAsync(orden);
     }
 }

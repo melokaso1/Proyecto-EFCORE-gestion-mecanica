@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Api.Helpers;
 using Api.Models;
 using Application.Dtos;
@@ -136,14 +137,14 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         }
     }
 
-    /// <summary>Desactiva un usuario.</summary>
-    [HttpPatch("{id:int}/desactivar")]
-    [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> Desactivar(int id)
+    /// <summary>Asigna especializaciones a un mecánico.</summary>
+    [HttpPatch("{id:int}/especializaciones")]
+    [Authorize(Roles = "Admin,Recepcionista")]
+    public async Task<IActionResult> AsignarEspecializaciones(int id, [FromBody] AsignarEspecializacionesDto dto)
     {
         try
         {
-            await usuarioService.DesactivarAsync(id);
+            await usuarioService.AsignarEspecializacionesAsync(id, dto);
             return NoContent();
         }
         catch (NotFoundException)
@@ -154,5 +155,36 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    /// <summary>Elimina (desactiva) un usuario del sistema.</summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin,Recepcionista")]
+    public async Task<IActionResult> Eliminar(int id)
+    {
+        if (!TryGetUsuarioActualId(out var idInvocador))
+            return Unauthorized(new { message = "No se pudo identificar al usuario autenticado." });
+
+        try
+        {
+            await usuarioService.EliminarAsync(id, idInvocador);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private bool TryGetUsuarioActualId(out int idUsuario)
+    {
+        idUsuario = 0;
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+        return idClaim is not null && int.TryParse(idClaim, out idUsuario);
     }
 }

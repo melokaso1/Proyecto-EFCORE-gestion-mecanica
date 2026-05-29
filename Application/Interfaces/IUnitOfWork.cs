@@ -27,7 +27,9 @@ public interface IUnitOfWork
     IGenericRepository<CategoriaRepuesto> CategoriasRepuesto { get; }
     IGenericRepository<DetalleFactura> DetallesFactura { get; }
     IGenericRepository<DiagnosticoOrden> DiagnosticosOrden { get; }
-    IGenericRepository<ReparacionItem> ReparacionesItem { get; }
+    IReparacionItemRepository ReparacionesItem { get; }
+    IGenericRepository<EspecializacionMecanico> EspecializacionesMecanico { get; }
     IGenericRepository<Pago> Pagos { get; }
+    IGenericRepository<TipoDocumento> TiposDocumento { get; }
     Task<int> CommitAsync();
 }

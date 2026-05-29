@@ -6,6 +6,7 @@ public class UsuarioDto
     public string NombreCompleto { get; set; } = string.Empty;
     public string Correo { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = [];
+    public List<EspecializacionMecanicoDto> Especializaciones { get; set; } = [];
 }
 
 public class CreateUsuarioDto

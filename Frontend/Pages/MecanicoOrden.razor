@@ -3,6 +3,7 @@
 @attribute [Authorize(Roles = "Mecánico")]
 @using Frontend.Models
 @inject IDiagnosticoClientService Diagnostico
+@inject IUsuariosService UsuariosService
 
 <PageTitle>Diagnóstico — Orden #@IdOrdenServicio</PageTitle>
 
@@ -76,12 +77,23 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <div class="md:col-span-3">
+            <div class="md:col-span-2">
                 <label class="text-xs font-semibold text-slate-600">Descripción</label>
                 <input class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
                        @bind="_newItem.Descripcion" />
             </div>
             <div class="md:col-span-2">
+                <label class="text-xs font-semibold text-slate-600">Especialización requerida</label>
+                <select class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                        @bind="_newItem.IdEspecializacionMecanico">
+                    <option value="0">Seleccionar...</option>
+                    @foreach (var esp in _especializaciones)
+                    {
+                        <option value="@esp.IdEspecializacionMecanico">@esp.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div class="md:col-span-1">
                 <label class="text-xs font-semibold text-slate-600">Costo estimado</label>
                 <input type="number"
                        class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
@@ -89,7 +101,7 @@
             </div>
             <div class="md:col-span-1 flex items-end">
                 <button class="w-full px-4 py-2 rounded-lg text-sm bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
-                        disabled="@_savingItem || string.IsNullOrWhiteSpace(_newItem.Descripcion)"
+                        disabled="@(_savingItem || string.IsNullOrWhiteSpace(_newItem.Descripcion) || _newItem.IdEspecializacionMecanico <= 0)"
                         @onclick="AgregarItemAsync">
                     Agregar
                 </button>
@@ -110,6 +122,7 @@
                         <tr>
                             <th class="px-4 py-3">#</th>
                             <th class="px-4 py-3">Descripción</th>
+                            <th class="px-4 py-3">Especialización</th>
                             <th class="px-4 py-3">Costo</th>
                             <th class="px-4 py-3">Estado</th>
                             <th class="px-4 py-3 text-right">Acción</th>
@@ -121,6 +134,7 @@
                             <tr>
                                 <td class="px-4 py-3 text-slate-700">@it.Orden</td>
                                 <td class="px-4 py-3 text-slate-900">@it.Descripcion</td>
+                                <td class="px-4 py-3 text-slate-700">@it.EspecializacionNombre</td>
                                 <td class="px-4 py-3 text-slate-700">@it.CostoEstimado.ToString("C0")</td>
                                 <td class="px-4 py-3 text-slate-700">@it.Estado</td>
                                 <td class="px-4 py-3 text-right">
@@ -166,6 +180,7 @@
     private UpsertDiagnosticoDto _diagForm = new();
     private CreateReparacionItemDto _newItem = new();
     private List<ReparacionItemDto> _items = [];
+    private List<EspecializacionMecanicoDto> _especializaciones = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -175,6 +190,7 @@
         _error = null;
         try
         {
+            _especializaciones = await UsuariosService.GetEspecializacionesAsync();
             var diag = await Diagnostico.GetDiagnosticoAsync(IdOrdenServicio);
             _diagForm = new UpsertDiagnosticoDto
             {

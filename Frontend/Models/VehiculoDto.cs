@@ -7,6 +7,7 @@ public class VehiculoListDto
     public string Modelo { get; set; } = string.Empty;
     public string TipoVehiculo { get; set; } = string.Empty;
     public string VIN { get; set; } = string.Empty;
+    public string Placa { get; set; } = string.Empty;
     public int Anio { get; set; }
     public int Kilometraje { get; set; }
 }

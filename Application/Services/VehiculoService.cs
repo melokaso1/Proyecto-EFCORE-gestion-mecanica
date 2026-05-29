@@ -10,9 +10,19 @@ public class VehiculoService(IUnitOfWork uow, IMapper mapper) : IVehiculoService
 {
     public async Task<VehiculoDto> CrearAsync(CreateVehiculoDto dto)
     {
+        var placa = dto.Placa.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(placa))
+            throw new BusinessRuleException("La placa es obligatoria.");
+
+        var placaExistente = (await uow.Vehiculos.FindAsync(v => v.Placa == placa)).FirstOrDefault();
+        if (placaExistente is not null)
+            throw new ConflictException($"Ya existe un vehículo con placa {placa}.");
+
         var vinExistente = (await uow.Vehiculos.FindAsync(v => v.VIN == dto.VIN)).FirstOrDefault();
         if (vinExistente is not null)
             throw new ConflictException($"Ya existe un vehículo con VIN {dto.VIN}.");
+
+        dto.Placa = placa;
 
         var vehiculo = mapper.Map<Vehiculo>(dto);
         await uow.Vehiculos.AddAsync(vehiculo);
@@ -27,6 +37,48 @@ public class VehiculoService(IUnitOfWork uow, IMapper mapper) : IVehiculoService
         await uow.CommitAsync();
 
         return mapper.Map<VehiculoDto>(vehiculo);
+    }
+
+    public async Task<VehiculoDto> CrearEnCatalogoAsync(CreateVehiculoCasoDto dto)
+    {
+        var placa = dto.Placa.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(placa))
+            throw new BusinessRuleException("La placa es obligatoria.");
+
+        var placaExistente = await uow.Vehiculos.ObtenerPorPlacaAsync(placa);
+        if (placaExistente is not null)
+            throw new ConflictException($"Ya existe un vehículo con placa {placa}.");
+
+        if (!string.IsNullOrWhiteSpace(dto.VIN))
+        {
+            var vinExistente = await uow.Vehiculos.ObtenerPorVinAsync(dto.VIN.Trim());
+            if (vinExistente is not null)
+                throw new ConflictException($"Ya existe un vehículo con VIN {dto.VIN}.");
+        }
+
+        var vehiculo = new Vehiculo
+        {
+            IdModelo = dto.IdModelo,
+            VIN = dto.VIN.Trim(),
+            Placa = placa,
+            Anio = dto.Anio,
+            Kilometraje = dto.Kilometraje
+        };
+
+        await uow.Vehiculos.AddAsync(vehiculo);
+        await uow.CommitAsync();
+
+        var detalle = await uow.Vehiculos.GetByIdAsync(vehiculo.IdVehiculo);
+        return mapper.Map<VehiculoDto>(detalle!);
+    }
+
+    public async Task<VehiculoDto?> ObtenerPorPlacaAsync(string placa)
+    {
+        if (string.IsNullOrWhiteSpace(placa))
+            return null;
+
+        var vehiculo = await uow.Vehiculos.ObtenerPorPlacaAsync(placa.Trim());
+        return vehiculo is null ? null : mapper.Map<VehiculoDto>(vehiculo);
     }
 
     public async Task<PagedResultDto<VehiculoDto>> ListarAsync(int page, int size, int? idCliente, string? vin)
@@ -69,12 +121,21 @@ public class VehiculoService(IUnitOfWork uow, IMapper mapper) : IVehiculoService
         var vehiculo = await uow.Vehiculos.GetByIdAsync(id)
             ?? throw new NotFoundException($"Vehículo {id} no encontrado.");
 
+        var placa = dto.Placa.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(placa))
+            throw new BusinessRuleException("La placa es obligatoria.");
+
+        var otraPlaca = (await uow.Vehiculos.FindAsync(v => v.Placa == placa && v.IdVehiculo != id)).FirstOrDefault();
+        if (otraPlaca is not null)
+            throw new ConflictException($"Ya existe un vehículo con placa {placa}.");
+
         var otroVin = (await uow.Vehiculos.FindAsync(v => v.VIN == dto.VIN && v.IdVehiculo != id)).FirstOrDefault();
         if (otroVin is not null)
             throw new ConflictException($"Ya existe un vehículo con VIN {dto.VIN}.");
 
         vehiculo.IdModelo = dto.IdModelo;
         vehiculo.VIN = dto.VIN;
+        vehiculo.Placa = placa;
         vehiculo.Anio = dto.Anio;
         vehiculo.Kilometraje = dto.Kilometraje;
         uow.Vehiculos.Update(vehiculo);

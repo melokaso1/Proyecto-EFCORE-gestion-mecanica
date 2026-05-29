@@ -59,16 +59,31 @@ public class ClienteRepository(AutoTallerDbContext context)
 
     public async Task<bool> ExisteConOrdenesActivasAsync(int idCliente)
     {
-        var idsVehiculos = await Context.HistorialPropietariosVehiculo
-            .Where(h => h.IdCliente == idCliente)
-            .Select(h => h.IdVehiculo)
-            .ToListAsync();
-
         return await Context.OrdenesServicio
             .Include(o => o.EstadoOrden)
-            .AnyAsync(o => idsVehiculos.Contains(o.IdVehiculo) &&
+            .AnyAsync(o => o.IdCliente == idCliente &&
                            o.EstadoOrden != null &&
                            o.EstadoOrden.Nombre != EstadosOrden.Completada &&
-                           o.EstadoOrden.Nombre != EstadosOrden.Cancelada);
+                           o.EstadoOrden.Nombre != EstadosOrden.Cancelada &&
+                           o.EstadoOrden.Nombre != EstadosOrden.EnRegistro &&
+                           o.EstadoOrden.Nombre != EstadosOrden.Cerrado);
+    }
+
+    public async Task<Cliente?> ObtenerPorDocumentoAsync(string numeroDocumento)
+    {
+        var doc = await Context.DocumentosPersona
+            .FirstOrDefaultAsync(d => d.NumeroDocumento == numeroDocumento.Trim() && d.EsPrincipal);
+
+        if (doc is null)
+            return null;
+
+        return await Context.Clientes
+            .Include(c => c.Persona!)
+            .ThenInclude(p => p.CorreosPersona)
+            .ThenInclude(cp => cp.DominioCorreo)
+            .Include(c => c.Persona!)
+            .ThenInclude(p => p.TelefonosPersona)
+            .ThenInclude(tp => tp.CodigoTelefono)
+            .FirstOrDefaultAsync(c => c.IdPersona == doc.IdPersona && c.Estado);
     }
 }

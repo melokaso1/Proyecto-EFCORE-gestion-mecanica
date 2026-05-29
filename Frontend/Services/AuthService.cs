@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Frontend.Models;
 using Microsoft.JSInterop;
@@ -145,6 +146,38 @@ public class AuthService(HttpClient http, IJSRuntime js)
     {
         if (!string.IsNullOrWhiteSpace(Token))
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+    }
+
+    public int? GetUserId()
+    {
+        if (string.IsNullOrWhiteSpace(Token))
+            return null;
+
+        try
+        {
+            var parts = Token.Split('.');
+            if (parts.Length != 3)
+                return null;
+
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            switch (payload.Length % 4)
+            {
+                case 2: payload += "=="; break;
+                case 3: payload += "="; break;
+            }
+
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("sub", out var sub)
+                && int.TryParse(sub.GetString(), out var id))
+                return id;
+        }
+        catch
+        {
+            // Token malformado
+        }
+
+        return null;
     }
 
     private async Task ClearStorageAsync()

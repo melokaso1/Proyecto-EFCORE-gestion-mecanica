@@ -15,7 +15,8 @@ public class DiagnosticoMappingConfig : IRegister
             .Ignore(d => d.IdMecanico)
             .Ignore(d => d.FechaDiagnostico);
 
-        config.NewConfig<ReparacionItem, ReparacionItemDto>();
+        config.NewConfig<ReparacionItem, ReparacionItemDto>()
+            .Map(dest => dest.EspecializacionNombre, src => src.Especializacion != null ? src.Especializacion.Nombre : string.Empty);
         config.NewConfig<CreateReparacionItemDto, ReparacionItem>()
             .Ignore(r => r.IdReparacionItem)
             .Ignore(r => r.IdOrdenServicio)

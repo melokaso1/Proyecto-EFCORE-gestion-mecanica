@@ -8,4 +8,5 @@ public class Usuario
     public bool Estado { get; set; }
     public Persona? Persona { get; set; }
     public ICollection<Rol> Roles { get; set; } = [];
+    public ICollection<EspecializacionMecanico> Especializaciones { get; set; } = [];
 }

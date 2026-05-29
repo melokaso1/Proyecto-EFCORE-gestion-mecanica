@@ -24,6 +24,9 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         if (orden.IdMecanico != idMecanico)
             throw new BusinessRuleException("Solo el mecánico asignado puede registrar el diagnóstico.");
 
+        if (!await uow.Usuarios.TieneEspecializacionPorCodigoAsync(idMecanico, EspecializacionesMecanico.Diagnostico))
+            throw new BusinessRuleException("Solo un mecánico con especialización en Diagnóstico puede registrar el diagnóstico.");
+
         // Regla: el diagnóstico solo se permite en etapa temprana.
         // Una vez que alguna reparación inició (EnProceso/Terminado), ya no se puede crear/editar diagnóstico.
         var estadoOrden = await uow.EstadosOrden.GetByIdAsync(orden.IdEstadoOrden);
@@ -66,6 +69,7 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             uow.DiagnosticosOrden.Update(diag);
         }
 
+        await OrdenEstadoSync.SincronizarTrasDiagnosticoAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -80,11 +84,8 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
 
     public async Task<IReadOnlyList<ReparacionItemDto>> ListarReparacionesAsync(int idOrdenServicio)
     {
-        var items = await uow.ReparacionesItem.FindAsync(r => r.IdOrdenServicio == idOrdenServicio);
-        return items
-            .OrderBy(r => r.Orden)
-            .Select(mapper.Map<ReparacionItemDto>)
-            .ToList();
+        var items = await uow.ReparacionesItem.ListarPorOrdenConDetalleAsync(idOrdenServicio);
+        return items.Select(mapper.Map<ReparacionItemDto>).ToList();
     }
 
     public async Task<ReparacionItemDto> CrearReparacionAsync(int idOrdenServicio, int idMecanico, CreateReparacionItemDto dto)
@@ -94,6 +95,13 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
 
         if (orden.IdMecanico != idMecanico)
             throw new BusinessRuleException("Solo el mecánico asignado puede proponer reparaciones.");
+
+        if (!await uow.Usuarios.TieneEspecializacionPorCodigoAsync(idMecanico, EspecializacionesMecanico.Diagnostico))
+            throw new BusinessRuleException("Solo un mecánico con especialización en Diagnóstico puede proponer reparaciones.");
+
+        var especializacion = await uow.EspecializacionesMecanico.GetByIdAsync(dto.IdEspecializacionMecanico);
+        if (especializacion is null || !especializacion.Activo)
+            throw new BusinessRuleException("La especialización requerida para la reparación no es válida.");
 
         var existentes = await uow.ReparacionesItem.FindAsync(r => r.IdOrdenServicio == idOrdenServicio);
         var nextOrden = existentes.Any() ? existentes.Max(r => r.Orden) + 1 : 1;
@@ -105,6 +113,7 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         item.Estado = EstadosReparacionItem.PendienteAprobacionJefe;
 
         await uow.ReparacionesItem.AddAsync(item);
+        await OrdenEstadoSync.SincronizarTrasReparacionPropuestaAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -114,12 +123,13 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             item.IdReparacionItem,
             "Reparación propuesta");
 
-        return mapper.Map<ReparacionItemDto>(item);
+        var detalle = await uow.ReparacionesItem.GetDetalleAsync(item.IdReparacionItem);
+        return mapper.Map<ReparacionItemDto>(detalle!);
     }
 
     public async Task<ReparacionItemDto> ActualizarReparacionAsync(int idOrdenServicio, int idReparacionItem, int idMecanico, UpdateReparacionItemDto dto)
     {
-        var item = await uow.ReparacionesItem.GetByIdAsync(idReparacionItem)
+        var item = await uow.ReparacionesItem.GetDetalleAsync(idReparacionItem)
             ?? throw new NotFoundException($"Reparación {idReparacionItem} no encontrada.");
 
         if (item.IdOrdenServicio != idOrdenServicio)
@@ -130,6 +140,10 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
 
         if (item.Estado is EstadosReparacionItem.AprobadoCliente or EstadosReparacionItem.RechazadoCliente or EstadosReparacionItem.EnProceso or EstadosReparacionItem.Terminado)
             throw new BusinessRuleException("No se puede editar una reparación luego de la decisión del cliente.");
+
+        var especializacion = await uow.EspecializacionesMecanico.GetByIdAsync(dto.IdEspecializacionMecanico);
+        if (especializacion is null || !especializacion.Activo)
+            throw new BusinessRuleException("La especialización requerida para la reparación no es válida.");
 
         mapper.Map(dto, item);
         uow.ReparacionesItem.Update(item);
@@ -142,12 +156,13 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             item.IdReparacionItem,
             "Reparación actualizada");
 
-        return mapper.Map<ReparacionItemDto>(item);
+        var detalle = await uow.ReparacionesItem.GetDetalleAsync(item.IdReparacionItem);
+        return mapper.Map<ReparacionItemDto>(detalle!);
     }
 
     public async Task<ReparacionItemDto> DecidirJefeAsync(int idOrdenServicio, int idReparacionItem, int idJefeUsuario, DecisionJefeDto dto)
     {
-        var item = await uow.ReparacionesItem.GetByIdAsync(idReparacionItem)
+        var item = await uow.ReparacionesItem.GetDetalleAsync(idReparacionItem)
             ?? throw new NotFoundException($"Reparación {idReparacionItem} no encontrada.");
 
         if (item.IdOrdenServicio != idOrdenServicio)
@@ -162,6 +177,10 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         item.Estado = dto.Aprobar ? EstadosReparacionItem.PendienteDecisionCliente : EstadosReparacionItem.RechazadoJefe;
 
         uow.ReparacionesItem.Update(item);
+
+        var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
+            ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
+        await OrdenEstadoSync.SincronizarTrasDecisionJefeAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -179,6 +198,11 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         int idClienteUsuario,
         Dictionary<int, DecisionClienteDto> decisiones)
     {
+        var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
+            ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
+
+        await ValidarClienteOrdenAsync(idClienteUsuario, orden);
+
         var items = (await uow.ReparacionesItem.FindAsync(r => r.IdOrdenServicio == idOrdenServicio))
             .ToList();
 
@@ -197,6 +221,7 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             uow.ReparacionesItem.Update(item);
         }
 
+        await OrdenEstadoSync.SincronizarTrasDecisionClienteAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -206,7 +231,8 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             idOrdenServicio,
             "Decisión del cliente registrada (parcial/total)");
 
-        return items.OrderBy(i => i.Orden).Select(mapper.Map<ReparacionItemDto>).ToList();
+        var detalle = await uow.ReparacionesItem.ListarPorOrdenConDetalleAsync(idOrdenServicio);
+        return detalle.Select(mapper.Map<ReparacionItemDto>).ToList();
     }
 
     public async Task<IReadOnlyList<ReparacionItemDto>> ListarPendientesJefeAsync(int page, int size)
@@ -214,16 +240,8 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         page = page < 1 ? 1 : page;
         size = size is < 1 or > 200 ? 50 : size;
 
-        var all = await uow.ReparacionesItem.FindAsync(r => r.Estado == EstadosReparacionItem.PendienteAprobacionJefe);
-        var items = all
-            .OrderBy(r => r.IdOrdenServicio)
-            .ThenBy(r => r.Orden)
-            .Skip((page - 1) * size)
-            .Take(size)
-            .Select(mapper.Map<ReparacionItemDto>)
-            .ToList();
-
-        return items;
+        var items = await uow.ReparacionesItem.ListarPendientesJefeConDetalleAsync(page, size);
+        return items.Select(mapper.Map<ReparacionItemDto>).ToList();
     }
 
     public async Task<ReparacionItemDto> IniciarReparacionAsync(int idOrdenServicio, int idReparacionItem, int idMecanico)
@@ -231,10 +249,7 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
             ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
 
-        if (orden.IdMecanico != idMecanico)
-            throw new BusinessRuleException("Solo el mecánico asignado puede iniciar reparaciones.");
-
-        var item = await uow.ReparacionesItem.GetByIdAsync(idReparacionItem)
+        var item = await uow.ReparacionesItem.GetDetalleAsync(idReparacionItem)
             ?? throw new NotFoundException($"Reparación {idReparacionItem} no encontrada.");
 
         if (item.IdOrdenServicio != idOrdenServicio)
@@ -243,9 +258,14 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         if (item.Estado != EstadosReparacionItem.AprobadoCliente)
             throw new BusinessRuleException("Solo se puede iniciar una reparación aprobada por el cliente.");
 
+        if (!await uow.Usuarios.TieneEspecializacionAsync(idMecanico, item.IdEspecializacionMecanico))
+            throw new BusinessRuleException("No tienes la especialización requerida para esta reparación.");
+
+        item.IdMecanico = idMecanico;
         item.Estado = EstadosReparacionItem.EnProceso;
         item.FechaInicio = DateTime.UtcNow;
         uow.ReparacionesItem.Update(item);
+        await OrdenEstadoSync.SincronizarTrasIniciarReparacionAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -255,7 +275,8 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             item.IdReparacionItem,
             "Reparación iniciada");
 
-        return mapper.Map<ReparacionItemDto>(item);
+        var detalle = await uow.ReparacionesItem.GetDetalleAsync(item.IdReparacionItem);
+        return mapper.Map<ReparacionItemDto>(detalle!);
     }
 
     public async Task<ReparacionItemDto> TerminarReparacionAsync(int idOrdenServicio, int idReparacionItem, int idMecanico)
@@ -263,14 +284,14 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         var orden = await uow.OrdenesServicio.GetByIdAsync(idOrdenServicio)
             ?? throw new NotFoundException($"Orden {idOrdenServicio} no encontrada.");
 
-        if (orden.IdMecanico != idMecanico)
-            throw new BusinessRuleException("Solo el mecánico asignado puede terminar reparaciones.");
-
-        var item = await uow.ReparacionesItem.GetByIdAsync(idReparacionItem)
+        var item = await uow.ReparacionesItem.GetDetalleAsync(idReparacionItem)
             ?? throw new NotFoundException($"Reparación {idReparacionItem} no encontrada.");
 
         if (item.IdOrdenServicio != idOrdenServicio)
             throw new BusinessRuleException("La reparación no pertenece a la orden indicada.");
+
+        if (item.IdMecanico != idMecanico)
+            throw new BusinessRuleException("Solo el mecánico que inició la reparación puede terminarla.");
 
         if (item.Estado != EstadosReparacionItem.EnProceso)
             throw new BusinessRuleException("Solo se puede terminar una reparación en proceso.");
@@ -278,6 +299,7 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
         item.Estado = EstadosReparacionItem.Terminado;
         item.FechaFin = DateTime.UtcNow;
         uow.ReparacionesItem.Update(item);
+        await OrdenEstadoSync.SincronizarTrasTerminarReparacionAsync(uow, orden);
         await uow.CommitAsync();
 
         await auditoria.RegistrarAsync(
@@ -287,7 +309,21 @@ public class DiagnosticoService(IUnitOfWork uow, IMapper mapper, IAuditoriaServi
             item.IdReparacionItem,
             "Reparación terminada");
 
-        return mapper.Map<ReparacionItemDto>(item);
+        var detalle = await uow.ReparacionesItem.GetDetalleAsync(item.IdReparacionItem);
+        return mapper.Map<ReparacionItemDto>(detalle!);
+    }
+
+    private async Task ValidarClienteOrdenAsync(int idClienteUsuario, OrdenServicio orden)
+    {
+        var usuario = await uow.Usuarios.GetByIdAsync(idClienteUsuario)
+            ?? throw new NotFoundException("Usuario no encontrado.");
+
+        var clientes = await uow.Clientes.FindAsync(c => c.IdPersona == usuario.IdPersona && c.Estado);
+        var cliente = clientes.FirstOrDefault()
+            ?? throw new BusinessRuleException("Tu cuenta no está asociada a un cliente.");
+
+        if (orden.IdCliente != cliente.IdCliente)
+            throw new BusinessRuleException("No tienes acceso a esa orden.");
     }
 }
 

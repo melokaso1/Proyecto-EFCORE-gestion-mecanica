@@ -54,6 +54,13 @@
                     Mis órdenes
                 </NavLink>
             </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <NavLink href="casos"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
+                         ActiveClass="bg-red-500/15 text-red-400 font-medium ring-1 ring-red-500/30">
+                    Casos
+                </NavLink>
+            </AuthorizeView>
             <AuthorizeView Roles="Recepcionista">
                 <NavLink href="recepcion"
                          class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-200 hover:bg-red-900 hover:text-white transition-colors"
@@ -154,6 +161,11 @@
                 <NavLink href="mecanico"
                          class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
                          ActiveClass="bg-red-50 text-red-700 font-medium">Órdenes</NavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,Recepcionista">
+                <NavLink href="casos"
+                         class="shrink-0 px-3 py-2 rounded-lg text-xs text-slate-600"
+                         ActiveClass="bg-red-50 text-red-700 font-medium">Casos</NavLink>
             </AuthorizeView>
             <AuthorizeView Roles="Recepcionista">
                 <NavLink href="recepcion"

@@ -314,6 +314,113 @@ namespace Infrastructure.Migrations
                     b.ToTable("DominiosCorreo", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.EspecializacionMecanico", b =>
+                {
+                    b.Property<int>("IdEspecializacionMecanico")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdEspecializacionMecanico"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.HasKey("IdEspecializacionMecanico");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.ToTable("EspecializacionesMecanico", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            IdEspecializacionMecanico = 1,
+                            Activo = true,
+                            Codigo = "DIAGNOSTICO",
+                            Descripcion = "Evaluación y detección de fallas",
+                            Nombre = "Diagnóstico"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 2,
+                            Activo = true,
+                            Codigo = "MOTOR",
+                            Descripcion = "Reparación de motor y componentes internos",
+                            Nombre = "Motor"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 3,
+                            Activo = true,
+                            Codigo = "FRENOS",
+                            Descripcion = "Sistema de frenos y ABS",
+                            Nombre = "Frenos"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 4,
+                            Activo = true,
+                            Codigo = "SUSPENSION",
+                            Descripcion = "Suspensión, dirección y alineación",
+                            Nombre = "Suspensión"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 5,
+                            Activo = true,
+                            Codigo = "ELECTRICO",
+                            Descripcion = "Batería, alternador, cableado y electrónica",
+                            Nombre = "Sistema eléctrico"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 6,
+                            Activo = true,
+                            Codigo = "TRANSMISION",
+                            Descripcion = "Caja manual/automática y embrague",
+                            Nombre = "Transmisión"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 7,
+                            Activo = true,
+                            Codigo = "AIRE_AC",
+                            Descripcion = "Climatización y refrigeración",
+                            Nombre = "Aire acondicionado"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 8,
+                            Activo = true,
+                            Codigo = "CARROCERIA",
+                            Descripcion = "Latonería, pintura y estética",
+                            Nombre = "Carrocería"
+                        },
+                        new
+                        {
+                            IdEspecializacionMecanico = 9,
+                            Activo = true,
+                            Codigo = "GENERAL",
+                            Descripcion = "Aceite, filtros y servicios preventivos",
+                            Nombre = "Mantenimiento general"
+                        });
+                });
+
             modelBuilder.Entity("Domain.Entities.EstadoOrden", b =>
                 {
                     b.Property<int>("IdEstadoOrden")
@@ -419,6 +526,11 @@ namespace Infrastructure.Migrations
                         {
                             IdEstadoOrden = 17,
                             Nombre = "Cerrado"
+                        },
+                        new
+                        {
+                            IdEstadoOrden = 18,
+                            Nombre = "En registro"
                         });
                 });
 
@@ -557,20 +669,27 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("FechaIngreso")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("IdCliente")
+                    b.Property<int?>("IdCliente")
                         .HasColumnType("integer");
 
                     b.Property<int>("IdEstadoOrden")
                         .HasColumnType("integer");
 
-                    b.Property<int>("IdMecanico")
+                    b.Property<int?>("IdMecanico")
                         .HasColumnType("integer");
 
-                    b.Property<int>("IdTipoServicio")
+                    b.Property<int?>("IdRecepcionista")
                         .HasColumnType("integer");
 
-                    b.Property<int>("IdVehiculo")
+                    b.Property<int?>("IdTipoServicio")
                         .HasColumnType("integer");
+
+                    b.Property<int?>("IdVehiculo")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MotivoIngreso")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("NotaCostoPropuesto")
                         .HasColumnType("text");
@@ -585,6 +704,8 @@ namespace Infrastructure.Migrations
                     b.HasIndex("IdEstadoOrden");
 
                     b.HasIndex("IdMecanico");
+
+                    b.HasIndex("IdRecepcionista");
 
                     b.HasIndex("IdTipoServicio");
 
@@ -702,6 +823,9 @@ namespace Infrastructure.Migrations
                     b.Property<decimal?>("HorasManoObraEstimada")
                         .HasColumnType("numeric");
 
+                    b.Property<int>("IdEspecializacionMecanico")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("IdMecanico")
                         .HasColumnType("integer");
 
@@ -712,6 +836,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("IdReparacionItem");
+
+                    b.HasIndex("IdEspecializacionMecanico");
 
                     b.HasIndex("IdMecanico");
 
@@ -1037,6 +1163,11 @@ namespace Infrastructure.Migrations
                     b.Property<int>("Kilometraje")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Placa")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<string>("VIN")
                         .IsRequired()
                         .HasMaxLength(17)
@@ -1046,10 +1177,28 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("IdModelo");
 
+                    b.HasIndex("Placa")
+                        .IsUnique();
+
                     b.HasIndex("VIN")
                         .IsUnique();
 
                     b.ToTable("Vehiculos", (string)null);
+                });
+
+            modelBuilder.Entity("EspecializacionMecanicoUsuario", b =>
+                {
+                    b.Property<int>("EspecializacionesIdEspecializacionMecanico")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MecanicosIdUsuario")
+                        .HasColumnType("integer");
+
+                    b.HasKey("EspecializacionesIdEspecializacionMecanico", "MecanicosIdUsuario");
+
+                    b.HasIndex("MecanicosIdUsuario");
+
+                    b.ToTable("MecanicoEspecializaciones", (string)null);
                 });
 
             modelBuilder.Entity("RolUsuario", b =>
@@ -1216,8 +1365,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("IdCliente")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.EstadoOrden", "EstadoOrden")
                         .WithMany()
@@ -1228,20 +1376,22 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Usuario", "Mecanico")
                         .WithMany()
                         .HasForeignKey("IdMecanico")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("IdRecepcionista")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.TipoServicio", "TipoServicio")
                         .WithMany()
                         .HasForeignKey("IdTipoServicio")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Vehiculo", "Vehiculo")
                         .WithMany()
                         .HasForeignKey("IdVehiculo")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Cliente");
 
@@ -1267,6 +1417,12 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.ReparacionItem", b =>
                 {
+                    b.HasOne("Domain.Entities.EspecializacionMecanico", "Especializacion")
+                        .WithMany("Reparaciones")
+                        .HasForeignKey("IdEspecializacionMecanico")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Domain.Entities.Usuario", "Mecanico")
                         .WithMany()
                         .HasForeignKey("IdMecanico")
@@ -1277,6 +1433,8 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("IdOrdenServicio")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Especializacion");
 
                     b.Navigation("Mecanico");
 
@@ -1333,6 +1491,21 @@ namespace Infrastructure.Migrations
                     b.Navigation("Modelo");
                 });
 
+            modelBuilder.Entity("EspecializacionMecanicoUsuario", b =>
+                {
+                    b.HasOne("Domain.Entities.EspecializacionMecanico", null)
+                        .WithMany()
+                        .HasForeignKey("EspecializacionesIdEspecializacionMecanico")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("MecanicosIdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("RolUsuario", b =>
                 {
                     b.HasOne("Domain.Entities.Rol", null)
@@ -1346,6 +1519,11 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("UsuariosIdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.EspecializacionMecanico", b =>
+                {
+                    b.Navigation("Reparaciones");
                 });
 
             modelBuilder.Entity("Domain.Entities.Factura", b =>

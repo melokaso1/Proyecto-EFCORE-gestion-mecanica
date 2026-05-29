@@ -77,11 +77,29 @@ public class VehiculoRepository(AutoTallerDbContext context)
             .ThenInclude(m => m.TipoVehiculo)
             .FirstOrDefaultAsync(v => v.VIN == vin);
 
+    public async Task<Vehiculo?> ObtenerPorPlacaAsync(string placa) =>
+        await Context.Vehiculos
+            .Include(v => v.Modelo!)
+            .ThenInclude(m => m.Marca)
+            .Include(v => v.Modelo!)
+            .ThenInclude(m => m.TipoVehiculo)
+            .FirstOrDefaultAsync(v => v.Placa == placa.Trim().ToUpperInvariant());
+
     public async Task<bool> ExisteConOrdenesActivasAsync(int idVehiculo) =>
         await Context.OrdenesServicio
             .Include(o => o.EstadoOrden)
             .AnyAsync(o => o.IdVehiculo == idVehiculo &&
                            o.EstadoOrden != null &&
                            o.EstadoOrden.Nombre != EstadosOrden.Completada &&
-                           o.EstadoOrden.Nombre != EstadosOrden.Cancelada);
+                           o.EstadoOrden.Nombre != EstadosOrden.Cancelada &&
+                           o.EstadoOrden.Nombre != EstadosOrden.EnRegistro &&
+                           o.EstadoOrden.Nombre != EstadosOrden.Cerrado);
+
+    public async Task<IReadOnlyList<ModeloVehiculo>> ListarModelosCatalogoAsync() =>
+        await Context.ModelosVehiculo
+            .Include(m => m.Marca)
+            .Include(m => m.TipoVehiculo)
+            .OrderBy(m => m.Marca!.NombreMarca)
+            .ThenBy(m => m.NombreModelo)
+            .ToListAsync();
 }

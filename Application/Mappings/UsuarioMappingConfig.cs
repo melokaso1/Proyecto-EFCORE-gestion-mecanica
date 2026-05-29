@@ -9,12 +9,24 @@ public class UsuarioMappingConfig : IRegister
     public void Register(TypeAdapterConfig config)
     {
         config.NewConfig<Usuario, UsuarioDto>()
+            .Map(dest => dest.IdUsuario, src => src.IdUsuario)
             .Map(dest => dest.NombreCompleto, src =>
                 src.Persona == null
                     ? string.Empty
                     : $"{src.Persona.Nombres} {src.Persona.Apellidos}".Trim())
             .Map(dest => dest.Correo, src => ObtenerCorreoPrincipal(src))
             .Map(dest => dest.Roles, src => src.Roles.Select(r => r.NombreRol).ToList())
+            .Map(dest => dest.Especializaciones, src => src.Especializaciones
+                .Where(e => e.Activo)
+                .OrderBy(e => e.Nombre)
+                .Select(e => new EspecializacionMecanicoDto
+                {
+                    IdEspecializacionMecanico = e.IdEspecializacionMecanico,
+                    Codigo = e.Codigo,
+                    Nombre = e.Nombre,
+                    Descripcion = e.Descripcion
+                })
+                .ToList())
             .IgnoreNonMapped(true);
     }
 

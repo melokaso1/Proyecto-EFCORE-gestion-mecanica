@@ -21,5 +21,9 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.HasMany(u => u.Roles)
             .WithMany(r => r.Usuarios)
             .UsingEntity(j => j.ToTable("UsuarioRoles"));
+
+        builder.HasMany(u => u.Especializaciones)
+            .WithMany(e => e.Mecanicos)
+            .UsingEntity(j => j.ToTable("MecanicoEspecializaciones"));
     }
 }

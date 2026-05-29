@@ -1,0 +1,453 @@
+@page "/casos/{Id:int}"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin,Recepcionista")]
+@using Frontend.Models
+@inject ICasosService CasosService
+@inject IEmpleadosService EmpleadosService
+@inject NavigationManager Navigation
+
+<PageTitle>Caso #@Id — Recepción</PageTitle>
+
+<div class="max-w-3xl mx-auto space-y-8 pb-10">
+    <header class="border-b border-slate-200 pb-6">
+        <a href="/casos" class="text-xs text-red-600 hover:text-red-800 font-medium">← Volver a casos</a>
+        <p class="text-xs font-semibold uppercase tracking-widest text-red-600 mt-3">Caso #@Id</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Registro de recepción</h1>
+        @if (_caso is not null)
+        {
+            <p class="text-sm text-slate-600 mt-2">Estado: <span class="font-medium">@_caso.Estado</span></p>
+        }
+    </header>
+
+    @if (_loading)
+    {
+        <div class="h-40 animate-pulse rounded-2xl bg-slate-200/80"></div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_error</div>
+    }
+    else if (_caso is null)
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">Caso no encontrado.</div>
+    }
+    else if (_confirmado)
+    {
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-8 text-center space-y-3">
+            <h2 class="text-xl font-bold text-emerald-900">Vehículo recibido</h2>
+            <p class="text-sm text-emerald-800">Orden #@_caso.IdOrdenServicio confirmada. El mecánico @_caso.MecanicoNombre puede iniciar el diagnóstico.</p>
+            <a href="/recepcion" class="inline-block mt-2 px-5 py-2.5 rounded-xl text-sm bg-emerald-700 text-white hover:bg-emerald-800">Ir al panel</a>
+        </div>
+    }
+    else
+    {
+        <nav class="flex gap-2">
+            @foreach (var (label, idx) in _steps.Select((s, i) => (s, i)))
+            {
+                var active = _step == idx;
+                var done = idx < _step || (idx == 0 && _caso.ClienteCompleto) || (idx == 1 && _caso.VehiculoCompleto);
+                <button type="button"
+                        class="flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition @(active ? "bg-red-600 text-white" : done ? "bg-red-50 text-red-800" : "bg-slate-100 text-slate-500")"
+                        @onclick="() => _step = idx">
+                    @label
+                </button>
+            }
+        </nav>
+
+        @if (_step == 0)
+        {
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Dueño del vehículo</h2>
+                    <p class="text-sm text-slate-600">Busca por documento o registra uno nuevo.</p>
+                </div>
+
+                @if (_caso.ClienteCompleto)
+                {
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+                        <p class="font-medium text-emerald-900">@_caso.ClienteNombre</p>
+                        <p class="text-emerald-700">@_caso.ClienteDocumento · @_caso.ClienteCorreo</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex gap-2">
+                        <input class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                               placeholder="Número de documento"
+                               @bind="_docBusqueda" />
+                        <button class="px-4 py-2 rounded-xl text-sm bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-60"
+                                disabled="@_saving"
+                                @onclick="BuscarClienteAsync">
+                            Buscar
+                        </button>
+                    </div>
+
+                    @if (_clienteEncontrado is not null)
+                    {
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
+                            <div class="text-sm">
+                                <p class="font-medium">@_clienteEncontrado.NombreCompleto</p>
+                                <p class="text-slate-500">@_clienteEncontrado.CorreoPrincipal</p>
+                            </div>
+                            <button class="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                                    disabled="@_saving"
+                                    @onclick="AsignarClienteExistenteAsync">
+                                Asignar
+                            </button>
+                        </div>
+                    }
+
+                    <details class="rounded-xl border border-slate-200">
+                        <summary class="px-4 py-3 text-sm font-medium text-slate-700 cursor-pointer">Registrar cliente nuevo</summary>
+                        <div class="px-4 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Nombres" @bind="_nuevoCliente.Nombres" />
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Apellidos" @bind="_nuevoCliente.Apellidos" />
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Correo" @bind="_nuevoCliente.Correo" />
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Teléfono" @bind="_nuevoCliente.Telefono" />
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Documento" @bind="_nuevoCliente.NumeroDocumento" />
+                            <select class="rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="_nuevoCliente.IdTipoDocumento">
+                                @foreach (var td in _tiposDocumento)
+                                {
+                                    <option value="@td.IdTipoDocumento">@td.Nombre</option>
+                                }
+                            </select>
+                            <div class="sm:col-span-2">
+                                <button class="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                                        disabled="@_saving"
+                                        @onclick="AsignarClienteNuevoAsync">
+                                    Crear y asignar
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+                }
+
+                @if (_caso.ClienteCompleto)
+                {
+                    <button class="w-full py-2.5 rounded-xl text-sm bg-red-600 text-white hover:bg-red-700" @onclick="() => _step = 1">
+                        Siguiente: vehículo →
+                    </button>
+                }
+            </section>
+        }
+        else if (_step == 1)
+        {
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Vehículo</h2>
+                    <p class="text-sm text-slate-600">Busca por placa o VIN, o registra uno nuevo para este caso.</p>
+                </div>
+
+                @if (_caso.VehiculoCompleto)
+                {
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+                        <p class="font-medium text-emerald-900">@_caso.VehiculoMarcaModelo (@_caso.VehiculoAnio)</p>
+                        <p class="text-emerald-700 font-mono">@_caso.VehiculoPlaca · @_caso.VehiculoVin</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Placa" @bind="_placaBusqueda" />
+                        <button class="px-4 py-2 rounded-xl text-sm bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-60"
+                                disabled="@_saving"
+                                @onclick="BuscarPorPlacaAsync">
+                            Buscar placa
+                        </button>
+                        <input class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="VIN" @bind="_vinBusqueda" />
+                        <button class="px-4 py-2 rounded-xl text-sm bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-60"
+                                disabled="@_saving"
+                                @onclick="BuscarPorVinAsync">
+                            Buscar VIN
+                        </button>
+                    </div>
+
+                    @if (_vehiculoEncontrado is not null)
+                    {
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
+                            <div class="text-sm">
+                                <p class="font-medium">@_vehiculoEncontrado.Marca @_vehiculoEncontrado.Modelo</p>
+                                <p class="text-slate-500 font-mono">@_vehiculoEncontrado.Placa · @_vehiculoEncontrado.VIN</p>
+                            </div>
+                            <button class="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                                    disabled="@_saving"
+                                    @onclick="AsignarVehiculoExistenteAsync">
+                                Asignar
+                            </button>
+                        </div>
+                    }
+
+                    <details class="rounded-xl border border-slate-200">
+                        <summary class="px-4 py-3 text-sm font-medium text-slate-700 cursor-pointer">Registrar vehículo nuevo</summary>
+                        <div class="px-4 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <select class="sm:col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="_nuevoVehiculo.IdModelo">
+                                <option value="0">Selecciona modelo…</option>
+                                @foreach (var m in _modelos)
+                                {
+                                    <option value="@m.IdModelo">@m.Marca @m.Modelo (@m.TipoVehiculo)</option>
+                                }
+                            </select>
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Placa" @bind="_nuevoVehiculo.Placa" />
+                            <input class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono" placeholder="VIN" @bind="_nuevoVehiculo.VIN" />
+                            <input type="number" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Año" @bind="_nuevoVehiculo.Anio" />
+                            <input type="number" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Kilometraje" @bind="_nuevoVehiculo.Kilometraje" />
+                            <div class="sm:col-span-2">
+                                <button class="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                                        disabled="@_saving"
+                                        @onclick="AsignarVehiculoNuevoAsync">
+                                    Crear y asignar
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+                }
+
+                <div class="flex gap-2">
+                    <button class="flex-1 py-2.5 rounded-xl text-sm border border-slate-200 text-slate-700 hover:bg-slate-50" @onclick="() => _step = 0">
+                        ← Cliente
+                    </button>
+                    @if (_caso.VehiculoCompleto)
+                    {
+                        <button class="flex-1 py-2.5 rounded-xl text-sm bg-red-600 text-white hover:bg-red-700" @onclick="() => _step = 2">
+                            Confirmar →
+                        </button>
+                    }
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Confirmar recepción</h2>
+                    <p class="text-sm text-slate-600">Asigna tipo de servicio, mecánico y motivo de ingreso.</p>
+                </div>
+
+                <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm space-y-1">
+                    <p><span class="text-slate-500">Cliente:</span> @_caso.ClienteNombre</p>
+                    <p><span class="text-slate-500">Vehículo:</span> @_caso.VehiculoMarcaModelo — @_caso.VehiculoPlaca</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Tipo de servicio</label>
+                        <select class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="_confirmar.IdTipoServicio">
+                            <option value="0">Selecciona…</option>
+                            @foreach (var ts in _tiposServicio)
+                            {
+                                <option value="@ts.IdTipoServicio">@ts.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Mecánico asignado</label>
+                        <select class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" @bind="_confirmar.IdMecanico">
+                            <option value="0">Selecciona…</option>
+                            @foreach (var m in _mecanicos)
+                            {
+                                <option value="@m.IdUsuario">@m.NombreCompleto</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Motivo de ingreso</label>
+                        <textarea class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" rows="3" @bind="_confirmar.MotivoIngreso"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button class="flex-1 py-2.5 rounded-xl text-sm border border-slate-200 text-slate-700 hover:bg-slate-50" @onclick="() => _step = 1">
+                        ← Vehículo
+                    </button>
+                    <button class="flex-1 py-2.5 rounded-xl text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                            disabled="@(_saving || _confirmar.IdTipoServicio <= 0 || _confirmar.IdMecanico <= 0)"
+                            @onclick="ConfirmarAsync">
+                        Confirmar recepción
+                    </button>
+                </div>
+
+                <button type="button"
+                        class="w-full py-2 text-xs text-slate-500 hover:text-red-600"
+                        disabled="@_saving"
+                        @onclick="CancelarAsync">
+                    Cancelar caso
+                </button>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private static readonly string[] _steps = ["Cliente", "Vehículo", "Confirmar"];
+
+    private bool _loading = true;
+    private bool _saving;
+    private bool _confirmado;
+    private int _step;
+    private string? _error;
+    private CasoRecepcionDto? _caso;
+
+    private string _docBusqueda = "";
+    private string _placaBusqueda = "";
+    private string _vinBusqueda = "";
+    private ClienteBusquedaDto? _clienteEncontrado;
+    private VehiculoBusquedaDto? _vehiculoEncontrado;
+
+    private CreateClienteCasoDto _nuevoCliente = new();
+    private CreateVehiculoCasoDto _nuevoVehiculo = new();
+    private ConfirmarCasoDto _confirmar = new();
+
+    private List<TipoDocumentoDto> _tiposDocumento = [];
+    private List<ModeloVehiculoCatalogoDto> _modelos = [];
+    private List<TipoServicioDto> _tiposServicio = [];
+    private List<UsuarioDto> _mecanicos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _tiposDocumento = await CasosService.TiposDocumentoAsync();
+            _modelos = await CasosService.ModelosVehiculoAsync();
+            _tiposServicio = await CasosService.TiposServicioAsync();
+
+            var empleados = await EmpleadosService.GetEmpleadosAsync(1, 100);
+            _mecanicos = empleados.Items.Where(e => e.Roles.Contains("Mecánico")).ToList();
+
+            _caso = await CasosService.ObtenerAsync(Id);
+            if (_caso is null)
+                return;
+
+            if (_caso.ClienteCompleto && !_caso.VehiculoCompleto)
+                _step = 1;
+            else if (_caso.ClienteCompleto && _caso.VehiculoCompleto)
+                _step = 2;
+
+            _confirmar.IdTipoServicio = _caso.IdTipoServicio ?? 0;
+            _confirmar.IdMecanico = _caso.IdMecanico ?? 0;
+            _confirmar.MotivoIngreso = _caso.MotivoIngreso;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task BuscarClienteAsync()
+    {
+        _saving = true;
+        _error = null;
+        _clienteEncontrado = null;
+        try
+        {
+            _clienteEncontrado = await CasosService.BuscarClienteAsync(_docBusqueda.Trim());
+            if (_clienteEncontrado is null)
+                _error = "No se encontró cliente con ese documento.";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task AsignarClienteExistenteAsync()
+    {
+        if (_clienteEncontrado is null) return;
+        await AsignarClienteInternalAsync(new AsignarClienteCasoDto { IdCliente = _clienteEncontrado.IdCliente });
+    }
+
+    private async Task AsignarClienteNuevoAsync() =>
+        await AsignarClienteInternalAsync(new AsignarClienteCasoDto { DatosNuevoCliente = _nuevoCliente });
+
+    private async Task AsignarClienteInternalAsync(AsignarClienteCasoDto dto)
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            _caso = await CasosService.AsignarClienteAsync(Id, dto);
+            _clienteEncontrado = null;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task BuscarPorPlacaAsync()
+    {
+        _saving = true;
+        _error = null;
+        _vehiculoEncontrado = null;
+        try
+        {
+            _vehiculoEncontrado = await CasosService.BuscarVehiculoPorPlacaAsync(_placaBusqueda.Trim());
+            if (_vehiculoEncontrado is null)
+                _error = "No se encontró vehículo con esa placa.";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task BuscarPorVinAsync()
+    {
+        _saving = true;
+        _error = null;
+        _vehiculoEncontrado = null;
+        try
+        {
+            _vehiculoEncontrado = await CasosService.BuscarVehiculoPorVinAsync(_vinBusqueda.Trim());
+            if (_vehiculoEncontrado is null)
+                _error = "No se encontró vehículo con ese VIN.";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task AsignarVehiculoExistenteAsync()
+    {
+        if (_vehiculoEncontrado is null) return;
+        await AsignarVehiculoInternalAsync(new AsignarVehiculoCasoDto { IdVehiculo = _vehiculoEncontrado.IdVehiculo });
+    }
+
+    private async Task AsignarVehiculoNuevoAsync() =>
+        await AsignarVehiculoInternalAsync(new AsignarVehiculoCasoDto { DatosNuevoVehiculo = _nuevoVehiculo });
+
+    private async Task AsignarVehiculoInternalAsync(AsignarVehiculoCasoDto dto)
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            _caso = await CasosService.AsignarVehiculoAsync(Id, dto);
+            _vehiculoEncontrado = null;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task ConfirmarAsync()
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            _caso = await CasosService.ConfirmarAsync(Id, _confirmar);
+            _confirmado = true;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task CancelarAsync()
+    {
+        _saving = true;
+        try
+        {
+            await CasosService.CancelarAsync(Id);
+            Navigation.NavigateTo("/casos");
+        }
+        catch (Exception ex) { _error = ex.Message; _saving = false; }
+    }
+}

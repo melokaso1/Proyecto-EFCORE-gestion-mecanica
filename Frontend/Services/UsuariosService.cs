@@ -33,20 +33,28 @@ public class UsuariosService(HttpClient http, AuthService auth) : IUsuariosServi
 
     public async Task<PagedUsuariosResult> GetUsuariosAsync(int page, int size)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get,
-            $"api/usuarios?pageNumber={page}&pageSize={size}");
-        auth.ApplyAuthorization(request);
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                $"api/usuarios?pageNumber={page}&pageSize={size}");
+            auth.ApplyAuthorization(request);
 
-        using var response = await http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+            using var response = await http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return new PagedUsuariosResult();
 
-        var items = await response.Content.ReadFromJsonAsync<List<UsuarioDto>>(JsonOptions) ?? [];
+            var items = await response.Content.ReadFromJsonAsync<List<UsuarioDto>>(JsonOptions) ?? [];
 
-        var totalCount = 0;
-        if (response.Headers.TryGetValues("X-Total-Count", out var values))
-            int.TryParse(values.FirstOrDefault(), out totalCount);
+            var totalCount = 0;
+            if (response.Headers.TryGetValues("X-Total-Count", out var values))
+                int.TryParse(values.FirstOrDefault(), out totalCount);
 
-        return new PagedUsuariosResult { Items = items, TotalCount = totalCount };
+            return new PagedUsuariosResult { Items = items, TotalCount = totalCount };
+        }
+        catch
+        {
+            return new PagedUsuariosResult();
+        }
     }
 
     public async Task<(bool Success, string? Error)> AsignarRolAsync(int idUsuario, int idRol)
@@ -63,6 +71,66 @@ public class UsuariosService(HttpClient http, AuthService auth) : IUsuariosServi
             if (response.IsSuccessStatusCode)
                 return (true, null);
 
+            var error = await ReadErrorMessageAsync(response);
+            return (false, error);
+        }
+        catch
+        {
+            return (false, "No se pudo conectar con la API.");
+        }
+    }
+
+    public async Task<List<EspecializacionMecanicoDto>> GetEspecializacionesAsync()
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "api/especializaciones-mecanico");
+            auth.ApplyAuthorization(request);
+            using var response = await http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return [];
+
+            return await response.Content.ReadFromJsonAsync<List<EspecializacionMecanicoDto>>(JsonOptions) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> EliminarUsuarioAsync(int idUsuario)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/usuarios/{idUsuario}");
+            auth.ApplyAuthorization(request);
+            using var response = await http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+                return (true, null);
+
+            var error = await ReadErrorMessageAsync(response);
+            return (false, error);
+        }
+        catch
+        {
+            return (false, "No se pudo conectar con la API.");
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> AsignarEspecializacionesAsync(
+        int idUsuario,
+        IReadOnlyList<int> idsEspecializaciones)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Patch, $"api/usuarios/{idUsuario}/especializaciones")
+            {
+                Content = JsonContent.Create(new { IdsEspecializaciones = idsEspecializaciones })
+            };
+            auth.ApplyAuthorization(request);
+            using var response = await http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+                return (true, null);
             var error = await ReadErrorMessageAsync(response);
             return (false, error);
         }

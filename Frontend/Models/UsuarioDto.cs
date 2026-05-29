@@ -6,6 +6,15 @@ public class UsuarioDto
     public string NombreCompleto { get; set; } = string.Empty;
     public string Correo { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = [];
+    public List<EspecializacionMecanicoDto> Especializaciones { get; set; } = [];
+}
+
+public class EspecializacionMecanicoDto
+{
+    public int IdEspecializacionMecanico { get; set; }
+    public string Codigo { get; set; } = string.Empty;
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
 }
 
 public class PagedUsuariosResult

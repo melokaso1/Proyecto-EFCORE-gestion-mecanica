@@ -9,8 +9,27 @@ namespace Application.Services;
 
 public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
 {
-    public async Task<ClienteDto> RegistrarClienteConVehiculoAsync(CreateClienteDto dto)
+    public async Task<ClienteDto> RegistrarClienteConVehiculoAsync(CreateClienteDto dto) =>
+        await RegistrarClienteInternoAsync(dto);
+
+    public Task<ClienteDto> RegistrarClienteAsync(CreateClienteDto dto) =>
+        RegistrarClienteInternoAsync(dto);
+
+    public async Task<ClienteDto?> BuscarPorDocumentoAsync(string numeroDocumento)
     {
+        if (string.IsNullOrWhiteSpace(numeroDocumento))
+            return null;
+
+        var cliente = await uow.Clientes.ObtenerPorDocumentoAsync(numeroDocumento.Trim());
+        return cliente is null ? null : mapper.Map<ClienteDto>(cliente);
+    }
+
+    private async Task<ClienteDto> RegistrarClienteInternoAsync(CreateClienteDto dto)
+    {
+        var existente = await uow.Clientes.ObtenerPorDocumentoAsync(dto.NumeroDocumento.Trim());
+        if (existente is not null)
+            throw new ConflictException($"Ya existe un cliente con documento {dto.NumeroDocumento}.");
+
         var persona = mapper.Map<Persona>(dto);
         await uow.Personas.AddAsync(persona);
         await uow.CommitAsync();
@@ -93,20 +112,11 @@ public class ClienteService(IUnitOfWork uow, IMapper mapper) : IClienteService
         var cliente = await uow.Clientes.GetByIdAsync(id)
             ?? throw new NotFoundException($"Cliente {id} no encontrado.");
 
-        if (await TieneOrdenesActivasAsync(id))
+        if (await uow.Clientes.ExisteConOrdenesActivasAsync(id))
             throw new BusinessRuleException("No se puede eliminar un cliente con órdenes de servicio activas.");
 
         uow.Clientes.Remove(cliente);
         await uow.CommitAsync();
-    }
-
-    private async Task<bool> TieneOrdenesActivasAsync(int idCliente)
-    {
-        var historiales = await uow.HistorialPropietarios.FindAsync(h => h.IdCliente == idCliente);
-        var idsVehiculos = historiales.Select(h => h.IdVehiculo).ToHashSet();
-
-        var ordenes = await uow.OrdenesServicio.FindAsync(o => idsVehiculos.Contains(o.IdVehiculo));
-        return ordenes.Any(o => o.EstaActiva());
     }
 
     private async Task<int> ObtenerOCrearDominioAsync(string dominio)

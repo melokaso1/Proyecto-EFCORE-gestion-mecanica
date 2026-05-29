@@ -15,7 +15,11 @@ builder.WebHost.UseStaticWebAssets();
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5000";
 
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddServerSideBlazor(options =>
+{
+    if (builder.Environment.IsDevelopment())
+        options.DetailedErrors = true;
+});
 builder.Services.AddAuthorizationCore();
 
 builder.Services.AddScoped<AuthService>();
@@ -30,6 +34,7 @@ builder.Services.AddScoped<IEmpleadosService, EmpleadosService>();
 builder.Services.AddScoped<IClientePortalService, ClientePortalService>();
 builder.Services.AddScoped<IDiagnosticoClientService, DiagnosticoClientService>();
 builder.Services.AddScoped<ICajaClientService, CajaClientService>();
+builder.Services.AddScoped<ICasosService, CasosService>();
 
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 

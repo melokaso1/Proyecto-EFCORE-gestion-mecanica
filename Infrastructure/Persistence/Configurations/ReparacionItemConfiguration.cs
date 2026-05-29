@@ -25,6 +25,11 @@ public class ReparacionItemConfiguration : IEntityTypeConfiguration<ReparacionIt
             .WithMany()
             .HasForeignKey(r => r.IdMecanico)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(r => r.Especializacion)
+            .WithMany(e => e.Reparaciones)
+            .HasForeignKey(r => r.IdEspecializacionMecanico)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

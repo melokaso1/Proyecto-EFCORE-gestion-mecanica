@@ -1,0 +1,136 @@
+@page "/casos"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin,Recepcionista")]
+@using Frontend.Models
+@inject ICasosService CasosService
+@inject NavigationManager Navigation
+
+<PageTitle>Casos — Recepción</PageTitle>
+
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+    <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-widest text-red-600">Recepción</p>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 mt-1">Casos en registro</h1>
+            <p class="text-sm text-slate-600 mt-2">Inicia un caso, captura dueño y vehículo, luego confirma la recepción.</p>
+        </div>
+        <button class="shrink-0 px-5 py-2.5 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                disabled="@_creating"
+                @onclick="IniciarCasoAsync">
+            @(_creating ? "Creando…" : "Nuevo caso")
+        </button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">@_error</div>
+    }
+
+    @if (_loading)
+    {
+        <div class="h-32 animate-pulse rounded-2xl bg-slate-200/80"></div>
+    }
+    else if (_casos.Count == 0)
+    {
+        <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+            <p class="text-slate-600">No hay casos en registro.</p>
+            <p class="text-sm text-slate-500 mt-1">Pulsa «Nuevo caso» para abrir un ticket vacío.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <tr>
+                        <th class="px-5 py-3">Caso</th>
+                        <th class="px-5 py-3">Cliente</th>
+                        <th class="px-5 py-3">Vehículo</th>
+                        <th class="px-5 py-3">Ingreso</th>
+                        <th class="px-5 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var caso in _casos)
+                    {
+                        <tr class="hover:bg-slate-50/80">
+                            <td class="px-5 py-3 font-medium">#@caso.IdOrdenServicio</td>
+                            <td class="px-5 py-3">
+                                @if (caso.ClienteCompleto)
+                                {
+                                    <span>@caso.ClienteNombre</span>
+                                    <span class="block text-xs text-slate-500">@caso.ClienteDocumento</span>
+                                }
+                                else
+                                {
+                                    <span class="text-amber-700 text-xs font-medium">Pendiente</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3">
+                                @if (caso.VehiculoCompleto)
+                                {
+                                    <span>@caso.VehiculoMarcaModelo</span>
+                                    <span class="block text-xs font-mono text-slate-500">@caso.VehiculoPlaca</span>
+                                }
+                                else
+                                {
+                                    <span class="text-amber-700 text-xs font-medium">Pendiente</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3">@caso.FechaIngreso.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                            <td class="px-5 py-3 text-right">
+                                <a href="/casos/@caso.IdOrdenServicio"
+                                   class="text-red-600 hover:text-red-800 font-medium text-xs uppercase tracking-wide">
+                                    Continuar →
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _creating;
+    private string? _error;
+    private List<CasoRecepcionDto> _casos = [];
+
+    protected override async Task OnInitializedAsync() => await RecargarAsync();
+
+    private async Task RecargarAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _casos = await CasosService.ListarEnRegistroAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudieron cargar los casos. {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task IniciarCasoAsync()
+    {
+        _creating = true;
+        _error = null;
+        try
+        {
+            var caso = await CasosService.IniciarAsync();
+            Navigation.NavigateTo($"/casos/{caso.IdOrdenServicio}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo crear el caso. {ex.Message}";
+            _creating = false;
+        }
+    }
+}

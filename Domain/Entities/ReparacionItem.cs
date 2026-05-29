@@ -7,6 +7,7 @@ public class ReparacionItem
     public int IdReparacionItem { get; set; }
     public int IdOrdenServicio { get; set; }
     public int? IdMecanico { get; set; }
+    public int IdEspecializacionMecanico { get; set; }
     public int Orden { get; set; }
     public string Descripcion { get; set; } = string.Empty;
     public decimal CostoEstimado { get; set; }
@@ -26,5 +27,6 @@ public class ReparacionItem
 
     public OrdenServicio? OrdenServicio { get; set; }
     public Usuario? Mecanico { get; set; }
+    public EspecializacionMecanico? Especializacion { get; set; }
 }
 

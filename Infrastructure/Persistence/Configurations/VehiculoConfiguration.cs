@@ -11,7 +11,9 @@ public class VehiculoConfiguration : IEntityTypeConfiguration<Vehiculo>
         builder.ToTable("Vehiculos");
         builder.HasKey(v => v.IdVehiculo);
         builder.Property(v => v.VIN).HasMaxLength(17).IsRequired();
+        builder.Property(v => v.Placa).HasMaxLength(10).IsRequired();
         builder.HasIndex(v => v.VIN).IsUnique();
+        builder.HasIndex(v => v.Placa).IsUnique();
         builder.HasOne(v => v.Modelo)
             .WithMany()
             .HasForeignKey(v => v.IdModelo)

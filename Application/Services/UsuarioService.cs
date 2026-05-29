@@ -108,7 +108,7 @@ public class UsuarioService(
 
     public async Task<PagedResultDto<UsuarioDto>> ListarAsync(int page, int size)
     {
-        var (items, total) = await uow.Usuarios.GetPagedAsync(page, size, _ => true);
+        var (items, total) = await uow.Usuarios.GetPagedAsync(page, size, u => u.Estado);
         var dtos = new List<UsuarioDto>();
         foreach (var usuario in items)
         {
@@ -150,8 +150,8 @@ public class UsuarioService(
         var rol = await uow.Roles.GetByIdAsync(idRol)
             ?? throw new NotFoundException($"Rol {idRol} no encontrado.");
 
-        if (rol.NombreRol is not ("Mecánico" or "Recepcionista"))
-            throw new BusinessRuleException("Solo se pueden asignar roles de Mecánico o Recepcionista.");
+        if (rol.NombreRol is not ("Mecánico" or "Recepcionista" or "Cliente" or "JefeMecanicos" or "JefeBodega"))
+            throw new BusinessRuleException("No se puede asignar ese rol desde este módulo.");
 
         usuario.Roles.Clear();
         usuario.Roles.Add(rol);
@@ -160,10 +160,47 @@ public class UsuarioService(
         await uow.CommitAsync();
     }
 
-    public async Task DesactivarAsync(int id)
+    public async Task AsignarEspecializacionesAsync(int idUsuario, AsignarEspecializacionesDto dto)
     {
+        var usuario = await uow.Usuarios.GetByIdAsync(idUsuario)
+            ?? throw new NotFoundException($"Usuario {idUsuario} no encontrado.");
+
+        if (!usuario.Roles.Any(r => r.NombreRol == "Mecánico"))
+            throw new BusinessRuleException("Solo se pueden asignar especializaciones a mecánicos.");
+
+        var ids = dto.IdsEspecializaciones.Distinct().ToList();
+        if (ids.Count == 0)
+            throw new BusinessRuleException("Debe seleccionar al menos una especialización.");
+
+        var especializaciones = (await uow.EspecializacionesMecanico.FindAsync(e => e.Activo)).ToList();
+        var invalidas = ids.Except(especializaciones.Select(e => e.IdEspecializacionMecanico)).ToList();
+        if (invalidas.Count > 0)
+            throw new BusinessRuleException("Una o más especializaciones no son válidas.");
+
+        usuario.Especializaciones.Clear();
+        foreach (var id in ids)
+        {
+            var esp = especializaciones.First(e => e.IdEspecializacionMecanico == id);
+            usuario.Especializaciones.Add(esp);
+        }
+
+        uow.Usuarios.Update(usuario);
+        await uow.CommitAsync();
+    }
+
+    public async Task EliminarAsync(int id, int idUsuarioInvocador)
+    {
+        if (id == idUsuarioInvocador)
+            throw new BusinessRuleException("No puedes desactivar tu propia cuenta.");
+
         var usuario = await uow.Usuarios.GetByIdAsync(id)
             ?? throw new NotFoundException($"Usuario {id} no encontrado.");
+
+        if (!usuario.Estado)
+            throw new NotFoundException($"Usuario {id} no encontrado.");
+
+        if (usuario.Roles.Any(r => r.NombreRol == "Admin"))
+            throw new BusinessRuleException("No se puede desactivar un administrador.");
 
         usuario.Estado = false;
         uow.Usuarios.Update(usuario);
@@ -195,6 +232,7 @@ public class UsuarioService(
 
         usuario.Persona = completo.Persona;
         usuario.Roles = completo.Roles;
+        usuario.Especializaciones = completo.Especializaciones;
 
         if (usuario.Persona is not null)
         {

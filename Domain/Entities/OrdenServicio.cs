@@ -5,12 +5,14 @@ namespace Domain.Entities;
 public class OrdenServicio
 {
     public int IdOrdenServicio { get; set; }
-    public int IdCliente { get; set; }
-    public int IdVehiculo { get; set; }
-    public int IdTipoServicio { get; set; }
-    public int IdMecanico { get; set; }
+    public int? IdCliente { get; set; }
+    public int? IdVehiculo { get; set; }
+    public int? IdTipoServicio { get; set; }
+    public int? IdMecanico { get; set; }
+    public int? IdRecepcionista { get; set; }
     public int IdEstadoOrden { get; set; }
     public DateTime FechaIngreso { get; set; }
+    public string? MotivoIngreso { get; set; }
     public DateTime? FechaEstimadaEntrega { get; set; }
     public string? TrabajoRealizado { get; set; }
 
@@ -35,6 +37,8 @@ public class OrdenServicio
             return false;
 
         return EstadoOrden.Nombre is not EstadosOrden.Completada
-            and not EstadosOrden.Cancelada;
+            and not EstadosOrden.Cancelada
+            and not EstadosOrden.EnRegistro
+            and not EstadosOrden.Cerrado;
     }
 }

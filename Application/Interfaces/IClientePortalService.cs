@@ -13,5 +13,10 @@ public interface IClientePortalService
     Task DecidirCostoAsync(int idUsuario, int idOrdenServicio, ClienteDecisionCostoDto dto);
 
     Task<IReadOnlyList<ReparacionItemDto>> ListarReparacionesOrdenAsync(int idUsuario, int idOrdenServicio);
+
+    Task<IReadOnlyList<ReparacionItemDto>> DecidirReparacionesAsync(
+        int idUsuario,
+        int idOrdenServicio,
+        Dictionary<int, DecisionClienteDto> decisiones);
 }
 

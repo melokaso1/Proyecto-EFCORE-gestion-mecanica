@@ -26,6 +26,8 @@ public class ReparacionItemDto
     public string Descripcion { get; set; } = string.Empty;
     public decimal CostoEstimado { get; set; }
     public decimal? HorasManoObraEstimada { get; set; }
+    public int IdEspecializacionMecanico { get; set; }
+    public string EspecializacionNombre { get; set; } = string.Empty;
     public string Estado { get; set; } = string.Empty;
 
     public bool? AprobadoPorJefe { get; set; }
@@ -45,6 +47,7 @@ public class CreateReparacionItemDto
     public string Descripcion { get; set; } = string.Empty;
     public decimal CostoEstimado { get; set; }
     public decimal? HorasManoObraEstimada { get; set; }
+    public int IdEspecializacionMecanico { get; set; }
 }
 
 public class DecisionJefeDto

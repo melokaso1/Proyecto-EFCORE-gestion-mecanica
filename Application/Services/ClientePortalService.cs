@@ -21,9 +21,10 @@ public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaServic
         var dtos = new List<ClientePortalOrdenDto>();
         foreach (var orden in items)
         {
-            var vehiculo = orden.Vehiculo ?? await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo);
-            if (vehiculo?.Modelo is null)
-                vehiculo = await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo);
+            if (orden.IdVehiculo is not > 0)
+                continue;
+
+            var vehiculo = orden.Vehiculo ?? await uow.Vehiculos.GetByIdAsync(orden.IdVehiculo.Value);
 
             decimal? totalFactura = null;
             try
@@ -104,6 +105,12 @@ public class ClientePortalService(IUnitOfWork uow, IFacturaService facturaServic
 
         return await diagnosticoService.ListarReparacionesAsync(idOrdenServicio);
     }
+
+    public Task<IReadOnlyList<ReparacionItemDto>> DecidirReparacionesAsync(
+        int idUsuario,
+        int idOrdenServicio,
+        Dictionary<int, DecisionClienteDto> decisiones) =>
+        diagnosticoService.DecidirClienteAsync(idOrdenServicio, idUsuario, decisiones);
 
     private async Task<Cliente> ObtenerClientePorUsuarioAsync(int idUsuario)
     {

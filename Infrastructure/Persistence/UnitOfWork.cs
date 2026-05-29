@@ -30,8 +30,10 @@ public class UnitOfWork(AutoTallerDbContext context) : IUnitOfWork, IDisposable
     private IGenericRepository<CategoriaRepuesto>? _categoriasRepuesto;
     private IGenericRepository<DetalleFactura>? _detallesFactura;
     private IGenericRepository<DiagnosticoOrden>? _diagnosticosOrden;
-    private IGenericRepository<ReparacionItem>? _reparacionesItem;
+    private IReparacionItemRepository? _reparacionesItem;
+    private IGenericRepository<EspecializacionMecanico>? _especializacionesMecanico;
     private IGenericRepository<Pago>? _pagos;
+    private IGenericRepository<TipoDocumento>? _tiposDocumento;
 
     public IClienteRepository Clientes => _clientes ??= new ClienteRepository(context);
     public IVehiculoRepository Vehiculos => _vehiculos ??= new VehiculoRepository(context);
@@ -55,8 +57,10 @@ public class UnitOfWork(AutoTallerDbContext context) : IUnitOfWork, IDisposable
     public IGenericRepository<CategoriaRepuesto> CategoriasRepuesto => _categoriasRepuesto ??= new GenericRepository<CategoriaRepuesto>(context);
     public IGenericRepository<DetalleFactura> DetallesFactura => _detallesFactura ??= new GenericRepository<DetalleFactura>(context);
     public IGenericRepository<DiagnosticoOrden> DiagnosticosOrden => _diagnosticosOrden ??= new GenericRepository<DiagnosticoOrden>(context);
-    public IGenericRepository<ReparacionItem> ReparacionesItem => _reparacionesItem ??= new GenericRepository<ReparacionItem>(context);
+    public IReparacionItemRepository ReparacionesItem => _reparacionesItem ??= new ReparacionItemRepository(context);
+    public IGenericRepository<EspecializacionMecanico> EspecializacionesMecanico => _especializacionesMecanico ??= new GenericRepository<EspecializacionMecanico>(context);
     public IGenericRepository<Pago> Pagos => _pagos ??= new GenericRepository<Pago>(context);
+    public IGenericRepository<TipoDocumento> TiposDocumento => _tiposDocumento ??= new GenericRepository<TipoDocumento>(context);
 
     public Task<int> CommitAsync() => context.SaveChangesAsync();
 

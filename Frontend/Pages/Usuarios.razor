@@ -2,6 +2,7 @@
 @layout MainLayout
 @attribute [Authorize(Roles = "Admin,Recepcionista")]
 @inject IUsuariosService UsuariosService
+@inject AuthService Auth
 @using System.Globalization
 
 <PageTitle>Usuarios — Mecánicas Jholversito</PageTitle>
@@ -180,14 +181,15 @@
                             <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Usuario</th>
                             <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Correo</th>
                             <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Rol</th>
-                            <th scope="col" class="min-w-[14rem] whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Acción</th>
+                            <th scope="col" class="whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Especializaciones</th>
+                            <th scope="col" class="min-w-[16rem] whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-600">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @if (!UsuariosVisibles.Any())
                         {
                             <tr>
-                                <td colspan="4" class="px-4 py-16 text-center">
+                                <td colspan="5" class="px-4 py-16 text-center">
                                     <p class="text-sm font-medium text-slate-700">No hay resultados</p>
                                     <p class="mt-1 text-xs text-slate-500">Prueba otro criterio de búsqueda o desactiva el filtro de pendientes.</p>
                                 </td>
@@ -197,8 +199,12 @@
                         {
                             @foreach (var usuario in UsuariosVisibles)
                             {
-                                var esAdmin = usuario.Roles.Contains("Admin");
-                                var sinRol = usuario.Roles.Count == 0;
+                                var roles = usuario.Roles ?? [];
+                                var esAdmin = roles.Contains("Admin");
+                                var esMecanico = roles.Contains("Mecánico");
+                                var mostrarEsp = EsMecanicoParaEspecializaciones(usuario.IdUsuario, esMecanico);
+                                var sinRol = roles.Count == 0;
+                                var puedeEliminar = PuedeEliminarUsuario(usuario, esAdmin);
                                 <tr @key="usuario.IdUsuario" class="@(sinRol ? "bg-red-50/40" : "hover:bg-slate-50/80") transition-colors">
                                     <td class="px-4 py-3.5 align-middle">
                                         <div class="flex flex-wrap items-center gap-2">
@@ -223,41 +229,98 @@
                                         }
                                         else
                                         {
-                                            @foreach (var r in usuario.Roles)
+                                            @foreach (var r in roles)
                                             {
                                                 <span class="@RolBadgeClass(r) mr-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold">@r</span>
                                             }
                                         }
                                     </td>
                                     <td class="px-4 py-3.5 align-middle">
-                                        @if (esAdmin)
+                                        @if (mostrarEsp)
                                         {
-                                            <span class="text-xs text-slate-400">No editable</span>
-                                        }
-                                        else
-                                        {
+                                            var seleccionadas = ContarEspecializaciones(usuario.IdUsuario);
                                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                                <select class="min-w-[10.5rem] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25"
-                                                        value="@rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario)"
-                                                        @onchange="(e) => OnRolSeleccionadoChanged(usuario.IdUsuario, e)">
-                                                    <option value="0">Seleccionar rol</option>
-                                                    <option value="2">Mecánico</option>
-                                                    <option value="3">Recepcionista</option>
+                                                <select multiple
+                                                        size="@(Math.Max(2, Math.Min(catalogoEspecializaciones.Count, 4)))"
+                                                        class="min-w-[10.5rem] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25"
+                                                        aria-label="Especializaciones del mecánico"
+                                                        @onchange="(e) => OnEspecializacionesChanged(usuario.IdUsuario, e)">
+                                                    @foreach (var esp in catalogoEspecializaciones)
+                                                    {
+                                                        <option value="@esp.IdEspecializacionMecanico"
+                                                                selected="@EspecializacionSeleccionada(usuario.IdUsuario, esp.IdEspecializacionMecanico)"
+                                                                title="@ObtenerTituloEspecializacion(esp)">
+                                                            @esp.Nombre
+                                                        </option>
+                                                    }
                                                 </select>
                                                 <button type="button"
-                                                        disabled="@(asignandoId == usuario.IdUsuario || rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario) is not (2 or 3))"
+                                                        disabled="@(guardandoEspId == usuario.IdUsuario || seleccionadas == 0)"
                                                         class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45"
-                                                        @onclick="() => AsignarRolAsync(usuario.IdUsuario)">
-                                                    @if (asignandoId == usuario.IdUsuario)
+                                                        @onclick="() => GuardarEspecializacionesAsync(usuario.IdUsuario)">
+                                                    @if (guardandoEspId == usuario.IdUsuario)
                                                     {
                                                         <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
                                                         <span>Guardando</span>
                                                     }
                                                     else
                                                     {
-                                                        <span>@(sinRol ? "Asignar rol" : "Guardar cambio")</span>
+                                                        <span>Guardar</span>
                                                     }
                                                 </button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-slate-400">Solo para mecánicos</span>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3.5 align-middle">
+                                        @if (esAdmin)
+                                        {
+                                            <span class="text-xs text-slate-400">Protegido</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="flex flex-col gap-2">
+                                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                                    <select class="min-w-[10.5rem] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/25"
+                                                            value="@rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario)"
+                                                            @onchange="(e) => OnRolSeleccionadoChanged(usuario.IdUsuario, e)">
+                                                        <option value="0">Seleccionar rol</option>
+                                                        <option value="2">Mecánico</option>
+                                                        <option value="3">Recepcionista</option>
+                                                        <option value="4">Cliente</option>
+                                                        <option value="5">Jefe de mecánicos</option>
+                                                        <option value="6">Jefe de bodega</option>
+                                                    </select>
+                                                    <button type="button"
+                                                            disabled="@(asignandoId == usuario.IdUsuario || !EsRolAsignable(rolesSeleccionados.GetValueOrDefault(usuario.IdUsuario)))"
+                                                            class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45"
+                                                            @onclick="() => AsignarRolAsync(usuario.IdUsuario)">
+                                                        @if (asignandoId == usuario.IdUsuario)
+                                                        {
+                                                            <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                                                            <span>Guardando</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>@(sinRol ? "Asignar rol" : "Guardar cambio")</span>
+                                                        }
+                                                    </button>
+                                                </div>
+                                                @if (puedeEliminar)
+                                                {
+                                                    <button type="button"
+                                                            class="inline-flex w-fit items-center justify-center rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+                                                            @onclick="() => AbrirModalEliminar(usuario)">
+                                                        Eliminar
+                                                    </button>
+                                                }
+                                                else if (EsUsuarioActual(usuario.IdUsuario))
+                                                {
+                                                    <span class="text-xs text-slate-400">Tu cuenta</span>
+                                                }
                                             </div>
                                         }
                                     </td>
@@ -271,9 +334,51 @@
     }
 </div>
 
+@if (usuarioAEliminar is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="eliminar-usuario-titulo">
+        <div class="w-full max-w-md rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/10">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h2 id="eliminar-usuario-titulo" class="text-lg font-semibold text-slate-900">Eliminar usuario</h2>
+                <p class="mt-1 text-sm text-slate-600">
+                    Se eliminará la cuenta de <span class="font-medium text-slate-900">@usuarioAEliminar.NombreCompleto</span>
+                    (<span class="font-mono text-xs">@usuarioAEliminar.Correo</span>). No podrá iniciar sesión y dejará de aparecer en la lista.
+                </p>
+                <p class="mt-2 text-sm text-slate-500">
+                    El registro se conserva en la base de datos para mantener la trazabilidad del historial.
+                </p>
+            </div>
+            <div class="flex flex-col-reverse gap-2 px-6 py-4 sm:flex-row sm:justify-end">
+                <button type="button"
+                        disabled="@eliminandoUsuario"
+                        class="inline-flex justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        @onclick="CerrarModalEliminar">
+                    Cancelar
+                </button>
+                <button type="button"
+                        disabled="@eliminandoUsuario"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                        @onclick="ConfirmarEliminarAsync">
+                    @if (eliminandoUsuario)
+                    {
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                        <span>Eliminando…</span>
+                    }
+                    else
+                    {
+                        <span>Sí, eliminar</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<UsuarioDto> usuarios = [];
     private readonly Dictionary<int, int> rolesSeleccionados = [];
+    private readonly Dictionary<int, HashSet<int>> especializacionesSeleccionadas = [];
+    private List<EspecializacionMecanicoDto> catalogoEspecializaciones = [];
     private readonly RegisterUserDto nuevoUsuario = new();
     private bool cargando = true;
     private bool mostrarFormularioRegistro;
@@ -281,6 +386,9 @@
     private string? mensajeRegistroError;
     private string? mensajeRegistroExito;
     private int? asignandoId;
+    private int? guardandoEspId;
+    private UsuarioDto? usuarioAEliminar;
+    private bool eliminandoUsuario;
     private string? mensajeExito;
     private string? mensajeError;
     private int totalUsuarios;
@@ -291,7 +399,8 @@
     private IEnumerable<UsuarioDto> UsuariosVisibles =>
         usuarios.Where(u =>
         {
-            if (soloPendientes && u.Roles.Count > 0)
+            var roles = u.Roles ?? [];
+            if (soloPendientes && roles.Count > 0)
                 return false;
 
             var q = filtroTexto.Trim();
@@ -306,12 +415,135 @@
     {
         "Mecánico" => "bg-red-100 text-red-900 ring-1 ring-inset ring-red-200",
         "Recepcionista" => "bg-slate-100 text-slate-800 ring-1 ring-inset ring-slate-200",
+        "Cliente" => "bg-blue-100 text-blue-900 ring-1 ring-inset ring-blue-200",
+        "JefeMecanicos" => "bg-amber-100 text-amber-900 ring-1 ring-inset ring-amber-200",
+        "JefeBodega" => "bg-violet-100 text-violet-900 ring-1 ring-inset ring-violet-200",
         _ => "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200"
+    };
+
+    private static bool EsRolAsignable(int idRol) => idRol is 2 or 3 or 4 or 5 or 6;
+
+    private static int RolNombreToId(string? nombre) => nombre switch
+    {
+        "Mecánico" => 2,
+        "Recepcionista" => 3,
+        "Cliente" => 4,
+        "JefeMecanicos" => 5,
+        "JefeBodega" => 6,
+        _ => 0
     };
 
     protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            catalogoEspecializaciones = await UsuariosService.GetEspecializacionesAsync();
+        }
+        catch
+        {
+            catalogoEspecializaciones = [];
+        }
+
         await CargarUsuariosAsync();
+    }
+
+    private bool EsUsuarioActual(int idUsuario) =>
+        Auth.GetUserId() == idUsuario;
+
+    private bool PuedeEliminarUsuario(UsuarioDto usuario, bool esAdmin) =>
+        !esAdmin && !EsUsuarioActual(usuario.IdUsuario);
+
+    private bool EsMecanicoParaEspecializaciones(int idUsuario, bool esMecanico) =>
+        esMecanico || rolesSeleccionados.GetValueOrDefault(idUsuario) == 2;
+
+    private bool EspecializacionSeleccionada(int idUsuario, int idEsp) =>
+        especializacionesSeleccionadas.TryGetValue(idUsuario, out var set) && set.Contains(idEsp);
+
+    private int ContarEspecializaciones(int idUsuario) =>
+        especializacionesSeleccionadas.GetValueOrDefault(idUsuario)?.Count ?? 0;
+
+    private static string ObtenerTituloEspecializacion(EspecializacionMecanicoDto esp) =>
+        string.IsNullOrWhiteSpace(esp.Descripcion) ? esp.Nombre : $"{esp.Nombre}: {esp.Descripcion}";
+
+    private void OnEspecializacionesChanged(int idUsuario, ChangeEventArgs e)
+    {
+        var set = new HashSet<int>();
+
+        switch (e.Value)
+        {
+            case string[] values:
+                foreach (var value in values)
+                {
+                    if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+                        set.Add(id);
+                }
+                break;
+            case string value when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id):
+                set.Add(id);
+                break;
+        }
+
+        especializacionesSeleccionadas[idUsuario] = set;
+    }
+
+    private void AbrirModalEliminar(UsuarioDto usuario) => usuarioAEliminar = usuario;
+
+    private void CerrarModalEliminar()
+    {
+        if (eliminandoUsuario)
+            return;
+        usuarioAEliminar = null;
+    }
+
+    private async Task ConfirmarEliminarAsync()
+    {
+        if (usuarioAEliminar is null)
+            return;
+
+        mensajeExito = null;
+        mensajeError = null;
+        eliminandoUsuario = true;
+        try
+        {
+            var (success, error) = await UsuariosService.EliminarUsuarioAsync(usuarioAEliminar.IdUsuario);
+            if (!success)
+            {
+                mensajeError = error;
+                return;
+            }
+
+            mensajeExito = $"Usuario {usuarioAEliminar.NombreCompleto} eliminado correctamente.";
+            usuarioAEliminar = null;
+            await CargarUsuariosAsync();
+        }
+        finally
+        {
+            eliminandoUsuario = false;
+        }
+    }
+
+    private async Task GuardarEspecializacionesAsync(int idUsuario)
+    {
+        mensajeExito = null;
+        mensajeError = null;
+        guardandoEspId = idUsuario;
+        try
+        {
+            var ids = especializacionesSeleccionadas.GetValueOrDefault(idUsuario)?.ToList() ?? [];
+            var (success, error) = await UsuariosService.AsignarEspecializacionesAsync(idUsuario, ids);
+            if (!success)
+            {
+                mensajeError = error;
+                return;
+            }
+
+            mensajeExito = "Especializaciones guardadas.";
+            await CargarUsuariosAsync();
+        }
+        finally
+        {
+            guardandoEspId = null;
+        }
     }
 
     private async Task CargarUsuariosAsync()
@@ -323,18 +555,18 @@
             var result = await UsuariosService.GetUsuariosAsync(1, 500);
             usuarios = result.Items;
             totalUsuarios = result.TotalCount;
-            pendientesSinRol = usuarios.Count(u => u.Roles.Count == 0);
+            pendientesSinRol = usuarios.Count(u => (u.Roles ?? []).Count == 0);
 
             rolesSeleccionados.Clear();
+            especializacionesSeleccionadas.Clear();
             foreach (var u in usuarios)
             {
-                var rolActual = u.Roles.FirstOrDefault() switch
-                {
-                    "Mecánico" => 2,
-                    "Recepcionista" => 3,
-                    _ => 0
-                };
+                var roles = u.Roles ?? [];
+                var rolActual = RolNombreToId(roles.FirstOrDefault());
                 rolesSeleccionados[u.IdUsuario] = rolActual;
+                especializacionesSeleccionadas[u.IdUsuario] = (u.Especializaciones ?? [])
+                    .Select(e => e.IdEspecializacionMecanico)
+                    .ToHashSet();
             }
         }
         catch
@@ -395,7 +627,7 @@
         mensajeExito = null;
         mensajeError = null;
 
-        if (!rolesSeleccionados.TryGetValue(idUsuario, out var idRol) || idRol is not (2 or 3))
+        if (!rolesSeleccionados.TryGetValue(idUsuario, out var idRol) || !EsRolAsignable(idRol))
         {
             mensajeError = "Selecciona un rol válido en la lista.";
             return;
